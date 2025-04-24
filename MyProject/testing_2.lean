@@ -6,3 +6,4 @@ lemma whatever2 (x y : PNat) : x + y + x + y = x + x + y + y := by
   omega
 
 #print whatever
+#print Option
