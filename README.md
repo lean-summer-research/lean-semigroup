@@ -11,7 +11,7 @@ You can work on this project in three ways:
 
 Options 2 and 3 use the Dev Container defined in the `.devcontainer` folder, providing a pre-configured environment.
 
-## Understanding Dev Containers
+## What are Dev Containers
 
 The `.devcontainer` folder contains configuration files (`devcontainer.json` and a `Dockerfile`) that define a specific development environment inside a Docker container.
 
