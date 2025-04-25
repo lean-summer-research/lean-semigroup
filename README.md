@@ -21,17 +21,10 @@ The `.devcontainer` folder contains configuration files (`devcontainer.json` and
 
 You can interact with this containerized environment using either GitHub Codespaces or a local VS Code setup with specific prerequisites.
 
----
 
 ## Option 1: Standard Local Development
 
 If you don't want to deal with any of this dev container stuff, you can clone the repository and open it in your local VS Code instance.
-
-```bash
-git clone https://github.com/lean-summer-research/lean-semigroup
-cd lean-semigroup
-code .
-```
 
 
 ## Option 2: GitHub Codespaces
@@ -40,47 +33,42 @@ This method runs the Dev Container on GitHub's servers, accessible via a web bro
 
 ### Usage:
 
-    Navigate to the repository page on GitHub: https://github.com/lean-summer-research/lean-semigroup
+Navigate to the repository page on GitHub: https://github.com/lean-summer-research/lean-semigroup
 
-    Click the green <> Code button.
+Click the green <> Code button.
 
-    Select the "Codespaces" tab and create a new codespace. In the future, you will be able to enter into an already built codespace from this menu.
+Select the "Codespaces" tab and create a new codespace. In the future, you will be able to enter into an already built codespace from this menu.
 
-    Wait for the initial build (5-10 minutes).
+Wait for the initial build (5-10 minutes).
 
-    The Codespace will open in your browser with a VS Code interface, containing the project files and the pre-configured Lean 4 environment.
+The Codespace will open in your browser with a VS Code interface, containing the project files and the pre-configured Lean 4 environment.
 
-    (Optional Connection): To use your local VS Code interface, click the green remote indicator button in the bottom-left corner of VS Code and select "Connect to Codespace...".
+(Optional Connection): To use your local VS Code interface, click the green remote indicator button in the bottom-left corner of VS Code and select "Connect to Codespace...".
 
-    Edit files and use the integrated terminal or Source Control panel for Git operations (pull, add, commit, push). Changes are pushed directly to the GitHub repository.
+Edit files and use the integrated terminal or Source Control panel for Git operations (pull, add, commit, push). Changes are pushed directly to the GitHub repository.
 
-    Note: Requires an internet connection. Performance is fine but the next option is probably faster.
+Note: Requires an internet connection. Performance is fine but the next option is probably faster.
 
 ## Option 3: Local Dev Container via VS Code Extension
 
 This method runs the Dev Container directly on your machine using Docker Desktop and the VS Code Dev Containers extension. This often provides slightly better performance as it uses local resources.
 
-### Prerequisites (One-Time Setup):
+### Dependencies:
 
-    Install Docker Desktop: Download from docker.com, install, and ensure it is running before proceeding. The VS Code extension depends on it.
+Install Docker Desktop: Download from docker.com, install, and ensure it is running before proceeding. The VS Code extension depends on it.
 
-    Install VS Code Extension: Open VS Code, navigate to the Extensions view, search for Dev Containers (by Microsoft), and install it.
+Install VS Code Extension: Open VS Code, navigate to the Extensions view, search for Dev Containers (by Microsoft), and install it.
 
 ### Usage:
 
-    Clone the repository locally if you haven't already.
+Clone the repository locally if you haven't already.
 
-``` bash
-    git clone https://github.com/YourOrganizationName/YourRepositoryName.git
-    cd YourRepositoryName
-```
+Open the repository folder in VS Code (`code .`).
 
-    Open the repository folder in VS Code (`code .`).
+VS Code should detect the .devcontainer configuration and prompt to "Reopen in Container". Click this button.
 
-    VS Code should detect the .devcontainer configuration and prompt to "Reopen in Container". Click this button.
+If the prompt does not appear, open the Command Palette (Cmd + Shift + P or Ctrl + Shift + P), type Dev Containers: Reopen in Container, and select it.
 
-        If the prompt does not appear, open the Command Palette (Cmd + Shift + P or Ctrl + Shift + P), type Dev Containers: Reopen in Container, and select it.
+Wait for the initial build, then VS Code will reload, connecting to the container. The bottom-left status bar will indicate you are in the Dev Container context. 
 
-    Wait for the initial build, then VS Code will reload, connecting to the container. The bottom-left status bar will indicate you are in the Dev Container context. 
-
-    Edit files and use the integrated terminal or Source Control panel for Git operations (pull, add, commit, push).
+Edit files and use the integrated terminal or Source Control panel for Git operations (pull, add, commit, push).
