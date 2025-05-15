@@ -1,73 +1,38 @@
-      
-# Project Setup
+There are two ways to use this repository:
 
-This project includes a Development Container (Dev Container) configuration to ensure all we all use a consistent Lean 4 toolchain version. This prevents environment-related issues.
+1. Clone the repository and use it normally, ignoring the `.devcontainer` folder.
+2. (also easy) Use GitHub Codespaces, which gives you a pre-configured development environment in your browser (explained below).
 
-You can work on this project in three ways:
+## Using GitHub Codespaces 
 
-1.  **Standard Local Development:** Clone the repository and use your existing local VS Code and Lean 4 installation. This requires you to manually ensure your Lean and `mathlib` versions match the project's requirements (`lean-toolchain` file).
-2. (easy) **GitHub Codespaces:** Use the Dev Container running on GitHub's infrastructure in your browser.
-3.  **Local Dev Container:** Use the Dev Container running locally on your machine via Docker Desktop and a VS Code extension.
+When you open this repo in a codespace, you'll see a VS Code interface in your browser. It's automatically set up with the LEAN4 vscode extention, correct lean version, and mathlib cache. It all runs on github's infra, so you don't have to worry about any of your local Lean, Elan, or VScode installations.
 
-Options 2 and 3 use the Dev Container defined in the `.devcontainer` folder.
+### First Time Setup:
+1. Click the green "<> Code" button at the top of this GitHub page
+2. Select "Codespaces" tab
+3. Click "Create codespace"
+4. Wait about 5-10 minutes for initial setup
 
-## What are Dev Containers
+### Basic Git Commands:
+- Get latest changes: Click "Sync Changes" in the bottom left
+- Save your changes:
+  1. Click the "Source Control" tab on the left (looks like a branch)
+  2. Type a message describing your changes
+  3. Click "Commit & Push" to save and upload your changes
 
-The `.devcontainer` folder contains configuration files (`devcontainer.json` and a `Dockerfile`) that define a specific development environment inside a Docker container.
+### Returning Later:
+Go back to the repository's "<> Code" button, select "Codespaces" tab, and click your existing codespace (starts a lot faster than the initial build).
 
-*   **What is a Docker Container:** An isolated virtual environment (like a virtual machine but ligher weight). It packages the necessary operating system (Ubuntu, in this case), system dependencies, the `elan` version manager, the lean4 VS Code extension, and fetches the `mathlib` cache.
-*   **Build Process:** When you first launch the Dev Container (either via Codespaces or by installing Docker locally), Docker builds this environment based on the `Dockerfile` and `devcontainer.json`. This initial build can take **5-10 minutes** as it downloads the base system and prepares the `mathlib` cache.
-*   **Faster Startup:** After the initial build, the container image is stored. Subsequent launches will reuse this image, making startup much faster as only the project files need to be loaded into the already-built environment.
+## How It Works (and how to do it locally)
 
+The `.devcontainer` folder defines a "dev container" which is basically a minimal virtual machine. The files in that folder describe an entire machine including the operating system, vscode installation, lean installation, etc. Codespaces is a free tool by github that lets you easily run a dev container in their cloud and access it through your browser. Behind the scenes, they use something called Docker to build the devcontainers.
 
-GitHub Codespaces 
-or a local VS Code setup with specific prerequisites.
+Docker is a tool that runs dev containers on your local computer. If you prefer not to use GitHub's cloud, you can run the same dev container locally:
 
-## Option 1: Standard Local Development
+1. Install Docker Desktop from docker.com
+2. In VS Code, install the "Dev Containers" extension
+3. Clone this repository
+4. Open the folder in VS Code
+5. Click "Reopen in Container" when prompted
 
-If you don't want to deal with any of this dev container stuff, you can clone the repository and open it in your local VS Code instance.
-
-
-## Option 2: GitHub Codespaces
-
-This method runs the Dev Container on GitHub's servers, accessible via a web browser. I recommend trying this out first becuse its basically a one-click setup for getting the entire environment and project loaded at once (even the vscode extention and mathlib cache).
-
-### Usage:
-
-Click the green <> Code button at the top of this github page. 
-
-Select the "Codespaces" tab and create a new codespace. In the future, you will be able to enter into this (already built) codespace from this same menu.
-
-Wait for the initial build (5-10 minutes).
-
-The Codespace will open in your browser with a VS Code interface, containing the project files and the pre-configured Lean 4 environment.
-
-(Optional): To use your local VS Code interface rather than a web-based vscode, click the green remote indicator button in the bottom-left corner of VS Code and select "Connect to Codespace...".
-
-Edit files and use the integrated terminal or Source Control panel for Git operations (pull, add, commit, push). Changes are pushed directly to the GitHub repository.
-
-Note: Using codespaces requires an internet connection becuaes it runs on github infra. Performance is fine but the next option is probably faster.
-
-## Option 3: Local Dev Container via VS Code Extension
-
-This method runs the Dev Container directly on your machine using Docker Desktop and the VS Code Dev Containers extension. This often provides slightly better performance as it uses local resources.
-
-### Dependencies:
-
-Install Docker Desktop: Download from docker.com, install, and ensure it is running before proceeding. The VS Code extension depends on it.
-
-Install VS Code Extension: Open VS Code, navigate to the Extensions view, search for Dev Containers (by Microsoft), and install it.
-
-### Usage:
-
-Clone the repository locally if you haven't already.
-
-Open the repository folder in VS Code (`code .`).
-
-VS Code should detect the .devcontainer configuration and prompt to "Reopen in Container". Click this button.
-
-If the prompt does not appear, open the Command Palette (Cmd + Shift + P or Ctrl + Shift + P), type Dev Containers: Reopen in Container, and select it.
-
-Wait for the initial build, then VS Code will reload, connecting to the container. The bottom-left status bar will indicate you are in the Dev Container context. 
-
-Edit files and use the integrated terminal or Source Control panel for Git operations (pull, add, commit, push).
+This will give you the same environment as Codespaces but running on your local machine. The VScode extension should automatically reopen the same container when you reopen the folder so you only have to build the container once.
