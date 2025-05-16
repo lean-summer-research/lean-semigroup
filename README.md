@@ -44,20 +44,31 @@ When you open this repo in a codespace, you'll see a VS Code interface in your b
 4. Wait about 5-10 minutes for initial setup
 
 ## Basic Git Commands:
-- Get latest changes: Click "Sync Changes" in the bottom left
-- Save your changes:
-  1. Click the "Source Control" tab on the left (looks like a branch)
-  2. Type a message describing your changes
-  3. Click "Commit & Push" to save and upload your changes
+  First you have to open the integrated terminal (Mac: `Cmd+(backtick)`, Windows: `Ctrl+(backtick)`)
+
+```bash
+# Download latest changes
+git pull
+
+# Save your changes
+# Stage all changes in the current working directory (make sure you are in the directory you want to save)
+git add .
+
+# Save changes locally
+git commit -m "example"
+
+# Upload changes to GitHub
+git push
+```
 
 ## Returning Later:
 Go back to the repository's "<> Code" button, select "Codespaces" tab, and click your existing codespace (starts a lot faster than the initial build).
 
 ## How It Works (and how to do it locally)
 
-The `.devcontainer` folder defines a "dev container" which is basically a minimal virtual machine. The files in that folder describe an entire machine including the operating system, vscode installation, lean installation, etc. Codespaces is a free tool by github that lets you easily run a dev container in their cloud and access it through your browser. Behind the scenes, they use something called Docker to build the devcontainers.
+The `.devcontainer` folder contains configuration files for a "dev container," which is like a small virtual machine. It sets up everything needed, like the operating system and software such as VSCode and Lean. GitHub Codespaces uses these files to create a development environment in the cloud, using Docker to manage the setup.
 
-Docker is a tool that runs dev containers on your local computer. If you prefer not to use GitHub's cloud, you can run the same dev container locally:
+Docker is a tool that runs dev containers on your local computer. If you prefer not to use GitHub's cloud, you can run the same dev container locally instead of using Codespaces:
 
 1. Install Docker Desktop from docker.com
 2. In VS Code, install the "Dev Containers" extension
