@@ -4,28 +4,21 @@ import Mathlib
 
 This file defines exponentiation operations for elements of a semigroup using
 positive natural numbers. It defines `pnatPow` and the `Pow M ℕ+` instance which
-allows us to use `x ^ n` notation in semigroups. The simp-tagged lemmas collectively
-normalize power expressions by flattening nested powers, collecting sum exponents
-into products, and organizing terms with consistent placement of base elements.
-For example, an expression like `(a*b)^n * (a*b)^m * a^1 ` would be
-normalized to `a * (b*a)^(n+m)` by calling `simp_all` on it.
-
-## Definitions and Lemmas
+allows us to use `x ^ n` notation in semigroups.
 
 The definitions and lemmas in this file are organized into the following sections:
 
 ### PNat Properties
 * `PNat.exists_eq_add_of_lt` - If `m < n` for positive naturals, then there
   exists a positive `k` such that `n = k + m`
-* `PNat.add_sub_cancel'` - For positive naturals, if `m < n` then
-  `m + (n - m) = n`
+* `PNat.add_sub_cancel'`
+* `PNat.n_lt_2nm`
 
 ### Basic Exponentiation
-* `PNat.pnatPow` - Main definition for exponentiation of semigroup elements by
-  positive naturals
+* `PNat.pnatPow`
 * `PNat.hPow` - Instance providing the notation `a ^ n` for semigroups
-* `PNat.pow_one` - Shows that `a ^ 1 = a`
-* `PNat.pow_succ` - Establishes the successor property for powers
+* `PNat.pow_one`
+* `PNat.pow_succ`
 
 ### Exponentiation Properties
 * `PNat.mul_pow_mul`
@@ -34,6 +27,10 @@ The definitions and lemmas in this file are organized into the following section
 * `PNat.pow_mul_comm`
 * `PNat.pow_mul`
 * `PNat.pow_right_comm`
+
+The simp-tagged lemmas collectively normalize power expressions whenever you
+call `simp`. For example, an expression like `(a*b)^n * (a*b)^m * a^1 ` would be
+normalized to `a * (b*a)^(n+m)` by calling `simp` on it.
 
 ### Special Properties
 * `PNat.pow_succ_eq` - Shows that for idempotent elements, all powers equal the
@@ -55,6 +52,7 @@ lemma exists_eq_add_of_lt {m n : ℕ+} (m_lt_n : m < n) :
     m + (n - m) = n := by
   induction m using PNat.recOn <;> (pnat_to_nat; omega)
 
+/-- For positive naturals, if `n < 2 * n * m` then `n < 2 * n * m`. -/
 lemma n_lt_2nm (n m : ℕ+) : n < 2 * n * m := by
   induction m using PNat.recOn with
   | one => pnat_to_nat; omega

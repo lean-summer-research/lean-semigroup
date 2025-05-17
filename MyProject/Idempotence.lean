@@ -3,8 +3,7 @@ import MyProject.WithOne
 /-! # Idempotence in Finite Semigroups
 
 This file defines properties related to idempotent elements in finite
-semigroups. It demonstrates that in any finite semigroup, powers of elements
-exhibit cyclical behavior and contain a unique idempotent element.
+semigroups.
 
 ## Key Theorems
 * `Semigroup.exists_repeating_pow` - Powers of an element eventually repeat
@@ -12,7 +11,7 @@ exhibit cyclical behavior and contain a unique idempotent element.
 * `Semigroup.exists_idempotent_pow` - Every element in a finite semigroup has
     an idempotent power
 
-This file builds imports `PnatPow.lean` and thereby `WithOne.lean`, and is
+This file imports `PnatPow.lean` (and thereby `WithOne.lean`), and is
 imported by `GreensRelations.lean`.-/
 
 namespace Semigroup

@@ -4,13 +4,7 @@ import MyProject.GreensRelations -- Current project head (imports everything)
 
 This file demonstrates how to apply theorems about monoids to semigroups by
 using the `WithOne` construction, which adjoins an identity element to a
-semigroup.
-
-## Key Theorems
-* `Monoid.exists_idempotent_pow`
-  - Restatement of the idempotent power theorem for monoids
-* `with_one_exists_idempotent_pow`
-  - Shows how to transfer the monoid result to semigroups -/
+semigroup. -/
 
 /-- Restates `Semigroup.exists_idempotent_pow` but requires monoid. -/
 theorem Monoid.exists_idempotent_pow (M) [Finite M] [Monoid M] (m : M) :

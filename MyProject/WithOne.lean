@@ -2,22 +2,13 @@ import MyProject.PnatPow
 
 /-! # WithOne Construction for Semigroups
 
-This file provides operations and properties for the `WithOne` construction.
-This construction takes a semigroup `S` and adjoins a unit element to form a
-monoid, denoted as `S¹` (typed as `S\^1`). The original semigroup `S` can be
-considered a subtype of `S¹` via an explicit coercion.
+This file relates to the `WithOne` construction for adding a unit element to a
+semigroup, forming a monoid denoted as `S¹` (typed as `S\^1`). The original
+semigroup `S` can be considered a subtype of `S¹` via a type coercion.
 
-The file defines two key lemmas:
-* `Semigroup.with_one_pow`: Taking powers of an element from `S` within the
-  monoid `S¹` is equivalent to taking powers in `S` and then embedding the
-  result into `S¹`.
-* `Semigroup.with_one_mul`: Multiplying two elements from `S` within `S¹` is
-  equivalent to multiplying them in `S` and then embedding the result into `S¹`.
-These lemmas are crucial for translating statements about the monoid `S¹` back to
-statements about the original semigroup `S`.
-
-An example of how these constructions and lemmas are used can be found in
-`Examples/WithOneExample.lean`.
+We define `Semigroup.with_one_pow` and `Semigroup.with_one_mul`, which are used
+in `Examples/WithOneExample.lean` to translate idempotence results from `S¹` to
+`S`.
 
 This file depends on `PnatPow.lean` for the semigroup exponentiation operations,
 and is imported by `Idempotence.lean` -/

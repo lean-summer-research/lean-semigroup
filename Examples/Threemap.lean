@@ -48,13 +48,10 @@ def f_212 : Threemap := ![2, 1, 2]
 /-- The constant function sending everything to 0. -/
 def f_000 : Threemap := ![0, 0, 0]
 
-/- Compute and print the R-class of f_220. -/
+/-! Compute and print Green's equivalence classes of f_220. -/
 #eval ⟦f_220⟧ᵣ
-/- Compute and print the L-class of f_220. -/
 #eval ⟦f_220⟧ₗ
-/- Compute and print the J-class of f_220. -/
 #eval ⟦f_220⟧ⱼ
-/- Compute and print the H-class of f_220. -/
 #eval ⟦f_220⟧ₕ
 
 variable (f g : Threemap)
@@ -73,6 +70,7 @@ def form_of_fun : Fin 5 :=
   else if f 0 = f 2 then 2 -- [a, b, a]
   else if f 0 = f 1 then 3 -- [a, a, b]
   else 4 -- [a, b, c]
+
 /-- Two functions are R-equivalent if and only if they have the same form. -/
 theorem R_class_form_correspondence :
     f ≡ᵣ g ↔ form_of_fun f = form_of_fun g := by revert f g; decide +native
@@ -80,6 +78,7 @@ theorem R_class_form_correspondence :
 /-- The image of a function as a Finset,
 representing which values can be outputs. -/
 def image_of_fun : Finset (Fin 3) := Finset.image f Finset.univ
+
 /-- Two functions are L-equivalent if and only if they have the same image. -/
 theorem L_class_image_corrospondence :
     image_of_fun f = image_of_fun g ↔ f ≡ₗ g := by revert f g; decide +native
@@ -91,11 +90,14 @@ theorem H_class_correspondence : f ≡ₕ g ↔ form_of_fun f = form_of_fun g
 
 /-- The rank of a function, defined as the cardinality of its image. -/
 def rank : Nat := Finset.card (Finset.image f Finset.univ)
+
 /-- The rank of any function in Threemap is either 1, 2, or 3. -/
 lemma rank_in_123 : rank f ∈ [1, 2, 3] := by revert f; decide
+
 /-- The rank of a composition of functions cannot
 exceed the rank of the first function. -/
 lemma rank_mul : rank (f * g) ≤ rank f := by revert f g; decide +native
+
 /-- Two functions are J-equivalent if and only if they have the same rank. -/
 theorem J_class_rank_correspondence :
     f ≡ⱼ g ↔ rank f = rank g := by revert f g; decide +native
