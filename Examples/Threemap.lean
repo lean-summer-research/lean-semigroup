@@ -1,27 +1,33 @@
 import MyProject.GreensRelations
 
-/-! # Threemap Example: Green's Relations on Functions on `Fin 3`
+/-!
+# Threemap Example: Green's Relations on Functions on `Fin 3`
 
-This file provides a concrete example for studying Green's relations on the
-monoid of functions from a three-element set to itself. It demonstrates the
-use of `#eval` and the `decide` tactic to compute and characterize Green's
-relations on this monoid.
+This file provides a concrete example for studying Green's relations on the monoid of functions
+from a three-element set to itself. It demonstrates the use of `#eval` and the `decide` tactic to
+compute and characterize Green's relations on this monoid.
 
-## Key Components
+## Definitions
+
 * `Threemap` - Type of functions from `Fin 3` to itself
 * Specific example functions like `f_id`, `f_120`, `f_112`, etc.
 * `form_of_fun` - Returns a function's form (ex. `[a, b, a]`)
 * `image_of_fun` - Returns the image of a function as a `Finset`
 * `rank_of_fun` - Returns the rank of a function (ex. `2` for `f_112`)
 
-## Correspondence Theorems
+**Correspondence Theorems**
 * `r_class_form_correspondence` - R-equivalence corresponds to function form
 * `l_class_image_corrospondence` - L-equivalence corresponds to function image
 * `h_class_correspondence` - H-equivalence corresponds to both form and image
-* `j_class_rank_correspondence` - J-equivalence corresponds to function rank -/
+* `j_class_rank_correspondence` - J-equivalence corresponds to function rank
 
-/-- The type of functions from a three-element set to itself,
-represented as `Fin 3 → Fin 3`. -/
+## Implementation Notes
+
+This file imports `GreensRelations.lean`.
+
+-/
+
+/-- The type of functions from a three-element set to itself, represented as `Fin 3 → Fin 3`. -/
 def Threemap : Type := Fin 3 → Fin 3
 deriving DecidableEq, Inhabited, Fintype
 
@@ -72,21 +78,20 @@ def form_of_fun : Fin 5 :=
   else 4 -- [a, b, c]
 
 /-- Two functions are R-equivalent if and only if they have the same form. -/
-theorem R_class_form_correspondence :
-    f ≡ᵣ g ↔ form_of_fun f = form_of_fun g := by revert f g; decide +native
+theorem R_class_form_correspondence : f ≡ᵣ g ↔ form_of_fun f = form_of_fun g := by
+  revert f g; decide +native
 
-/-- The image of a function as a Finset,
-representing which values can be outputs. -/
+/-- The image of a function as a Finset, representing which values can be outputs. -/
 def image_of_fun : Finset (Fin 3) := Finset.image f Finset.univ
 
 /-- Two functions are L-equivalent if and only if they have the same image. -/
-theorem L_class_image_corrospondence :
-    image_of_fun f = image_of_fun g ↔ f ≡ₗ g := by revert f g; decide +native
+theorem L_class_image_corrospondence : image_of_fun f = image_of_fun g ↔ f ≡ₗ g := by
+  revert f g; decide +native
 
-/-- Two functions are H-equivalent if and only if
-they have both the same form and image. -/
-theorem H_class_correspondence : f ≡ₕ g ↔ form_of_fun f = form_of_fun g
-    ∧ image_of_fun f = image_of_fun g := by revert f g; decide +native
+/-- Two functions are H-equivalent if and only if they have both the same form and image. -/
+theorem H_class_correspondence :
+    f ≡ₕ g ↔ form_of_fun f = form_of_fun g ∧ image_of_fun f = image_of_fun g := by
+  revert f g; decide +native
 
 /-- The rank of a function, defined as the cardinality of its image. -/
 def rank : Nat := Finset.card (Finset.image f Finset.univ)
@@ -94,12 +99,10 @@ def rank : Nat := Finset.card (Finset.image f Finset.univ)
 /-- The rank of any function in Threemap is either 1, 2, or 3. -/
 lemma rank_in_123 : rank f ∈ [1, 2, 3] := by revert f; decide
 
-/-- The rank of a composition of functions cannot
-exceed the rank of the first function. -/
+/-- The rank of a composition of functions cannot exceed the rank of the first function. -/
 lemma rank_mul : rank (f * g) ≤ rank f := by revert f g; decide +native
 
 /-- Two functions are J-equivalent if and only if they have the same rank. -/
-theorem J_class_rank_correspondence :
-    f ≡ⱼ g ↔ rank f = rank g := by revert f g; decide +native
+theorem J_class_rank_correspondence : f ≡ⱼ g ↔ rank f = rank g := by revert f g; decide +native
 
 end Threemap

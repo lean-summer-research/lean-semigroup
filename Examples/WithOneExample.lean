@@ -1,17 +1,22 @@
-import MyProject.GreensRelations -- Current project head (imports everything)
+import MyProject.GreensRelations
 
-/-! # WithOne Example: Idempotent Powers
+/-!
+# WithOne Example: Idempotent Powers
 
-This file demonstrates how to apply theorems about monoids to semigroups by
-using the `WithOne` construction, which adjoins an identity element to a
-semigroup. -/
+This file demonstrates how to apply theorems about monoids to semigroups by using the `WithOne`
+construction, which adjoins an identity element to a semigroup.
+
+## Implementation Notes
+
+This file imports `GreensRelations.lean`, and makes use of definitions from `WithOne.lean`.
+-/
 
 /-- Restates `Semigroup.exists_idempotent_pow` but requires monoid. -/
 theorem Monoid.exists_idempotent_pow (M) [Finite M] [Monoid M] (m : M) :
   ∃ (n : ℕ+), IsIdempotentElem (m ^ n) := Semigroup.exists_idempotent_pow m
 
-/-- This theorem demonstrates how to use the Monoid theorem to prove a result about a
-semigroup by adjoining an identity element. -/
+/-- This theorem demonstrates how to use the Monoid theorem to prove a result
+about a semigroup by adjoining an identity element. -/
 theorem with_one_exists_idempotent_pow {S} [Semigroup S] [Fintype S] (x : S) :
     ∃ (n : ℕ+), IsIdempotentElem (x ^ n) := by
   -- apply Monoid theorem to S¹
