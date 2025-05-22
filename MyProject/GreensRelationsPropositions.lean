@@ -24,6 +24,11 @@ We also show this is equivalent to the composition in the other order-- 𝓓 = �
 * `D_rel` : The Green's 𝓓 relation
 * `D_rel_def` : `a ≡ᴰ b` ↔ ∃ x, a ≡ᵣ x ∧ x ≡ₗ b
 * `D_rel_alt` : `a ≡ᴰ b` ↔ ∃ x, a ≡ₗ x ∧ x ≡ᵣ b
+
+## TODO
+- Put the defition of the D relation in GreensRelations.lean
+- Rename this file to GreensRelationsBasic.lean
+- See The bottom for Propositions from varieties-of-formal-languages
 -/
 variable {M} [Monoid M]
 

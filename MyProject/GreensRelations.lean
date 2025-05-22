@@ -46,6 +46,12 @@ This file imports `Idempotence.lean`, and is imported by `GreensRelations.lean`.
 The decidability instances enable the use of `#eval` to compute Green's relations and use the `decide`
 tactic to prove theorems about the relations by brute force, so long as we are reasoning about a
 concrete, finite monoid. Examples of this can be found in `Examples/Threemap.lean`.
+
+## TODO
+- Prove the equivilance of existing relation's definitions to the coset/subset based definitions
+  ex: `a ≡𝓡 b` iff `a M = b M`
+- Should we replace `≡ᵣ` and `≤ᵣ` notation with `≡𝓡` and `≤𝓡`?
+- Rename this file to GreensRelationsDefs.lean
 -/
 
 
