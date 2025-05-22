@@ -28,8 +28,8 @@ We also show this is equivalent to the composition in the other order-- 𝓓 = �
 ## TODO
 - Put the defition of the D relation in GreensRelations.lean
 - Rename this file to GreensRelationsBasic.lean
-- See The bottom for Propositions from varieties-of-formal-languages
 -/
+
 variable {M} [Monoid M]
 
 theorem le_R.lmult_compat {a b c : M} (h : a ≤ᵣ b) : c * a ≤ᵣ c * b := by
