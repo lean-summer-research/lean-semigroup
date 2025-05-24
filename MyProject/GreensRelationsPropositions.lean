@@ -165,16 +165,20 @@ theorem D_iff_J_finite_semigroup [Fintype S] {a b : S¹} : a ≡ᴰ b ↔ a ≡�
         simp
         exact h
       | succ k ih =>
-        simp_rw[<- PNat.pow_succ]
-        rw [PNat.pow_mul_comm' (x * u)]
-        simp_rw[<- mul_assoc]
-        sorry -- need to reassociate the goal so that it's in a form to allow substitution of ih
+        simp_rw[<- PNat.pow_succ, PNat.pow_mul_comm' (x * u), <- mul_assoc, mul_assoc (x * u)]
+        rw[ih]
+        repeat rw[<-mul_assoc]
+        exact h
     have ⟨k, he⟩ := Semigroup.exists_idempotent_pow (x * u)
     have ⟨l, hf⟩ := Semigroup.exists_idempotent_pow (v * y)
     have hua : (u * a) ≡ₗ a := by
-     sorry
+     constructor
+      · use u
+      · sorry
     have hav : (a * v) ≡ᵣ a := by
-     sorry
+     constructor
+      · use v
+      · sorry
     have hl : b ≡ₗ (a * v) := by
       have huav : u * a * v ≡ₗ a * v := L_rel.rmult_compat hua
       rw[hba]
