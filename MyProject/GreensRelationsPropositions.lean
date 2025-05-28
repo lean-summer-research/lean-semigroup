@@ -46,17 +46,11 @@ theorem le_L.rmult_compat {a b c : S¹} (h : a ≤ₗ b) : a * c ≤ₗ b * c :=
   use x
   rw [← mul_assoc, hx]
 
-theorem R_rel.lmult_compat {a b c : S¹} (h : a ≡ᵣ b) : c * a ≡ᵣ c * b := by
-  constructor
-  · exact le_R.lmult_compat h.left
-  · rw [R_rel] at h
-    apply le_R.lmult_compat h.right
+theorem R_rel.lmult_compat {a b c : S¹} (h : a ≡ᵣ b) : c * a ≡ᵣ c * b :=
+  ⟨le_R.lmult_compat h.left, le_R.lmult_compat h.right⟩
 
-theorem L_rel.rmult_compat {a b c : S¹} (h : a ≡ₗ b) : a * c ≡ₗ b * c := by
-  constructor
-  · exact le_L.rmult_compat h.left
-  · rw [L_rel] at h
-    apply le_L.rmult_compat h.right
+theorem L_rel.rmult_compat {a b c : S¹} (h : a ≡ₗ b) : a * c ≡ₗ b * c :=
+  ⟨le_L.rmult_compat h.left, le_L.rmult_compat h.right⟩
 
 
 def rel_composition {α : Type*} (r s : α → α → Prop) : α → α → Prop :=
@@ -68,8 +62,7 @@ theorem R_L_commute {a b: S¹}: (L_rel ∘ᴿ R_rel) a b ↔ (R_rel ∘ᴿ L_rel
   unfold rel_composition
   constructor
   · rintro ⟨c, hr, hl⟩
-    obtain ⟨u, hu⟩ := hr.left
-    obtain ⟨v, hv⟩ := hl.right
+    obtain ⟨⟨u, hu⟩, ⟨v, hv⟩⟩ := hr.left, hl.right
     let x := u * c * v
     use x
     constructor
@@ -87,8 +80,7 @@ theorem R_L_commute {a b: S¹}: (L_rel ∘ᴿ R_rel) a b ↔ (R_rel ∘ᴿ L_rel
     rw[hv, hx]; exact h2
 
   · rintro ⟨c, hl, hr⟩
-    obtain ⟨u, hu⟩ := hl.left
-    obtain ⟨v, hv⟩ := hr.right
+    obtain ⟨⟨u, hu⟩, ⟨v, hv⟩⟩ := hl.left, hr.right
     let x := v * c * u
     use x
     constructor
