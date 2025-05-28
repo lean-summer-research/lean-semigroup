@@ -112,9 +112,6 @@ def D_rel (a b : S¹) : Prop :=
 
 infix:50 " ≡ᴰ " => D_rel
 
-theorem D_rel_def {a b : S¹} : a ≡ᴰ b ↔ ∃ x : S¹, a ≡ᵣ x ∧ x ≡ₗ b :=
-  Iff.rfl
-
 def D_rel_alt (a b : S¹) : Prop :=
   ∃ x : S¹, a ≡ₗ x ∧ x ≡ᵣ b
 
@@ -186,6 +183,6 @@ theorem D_iff_J_finite_semigroup [Fintype S] {a b : S¹} : a ≡ᴰ b ↔ a ≡�
     have hr : D_rel_alt b a := by
      let x := a * v
      exact ⟨(a * v), hl, hav⟩
-    have h3: b ≡ᴰ a := by
+    have hd: b ≡ᴰ a := by
       rw [<- D_rel_alt_def] at hr
       exact hr
