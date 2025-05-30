@@ -45,6 +45,8 @@ instance with_one_monoid : Monoid (S¹) := by infer_instance
 /-- When `S` has a finite type instance, so does `S¹`. -/
 instance with_one_fintype [Fintype S] : Fintype (S¹) := by unfold WithOne; infer_instance
 
+instance with_one_decidable [DecidableEq S] : DecidableEq (S¹) := by unfold WithOne; infer_instance
+
 /-- Taking powers in the monoid `S¹` of an element from the semigroup `S` is
 equivalent to taking powers in `S` and then embedding the result into `S¹`. -/
 lemma with_one_pow {S} [Semigroup S] (x : S) (n : ℕ+) : (↑x : S¹) ^ n = ↑(x ^ n) := by
@@ -54,6 +56,7 @@ lemma with_one_pow {S} [Semigroup S] (x : S) (n : ℕ+) : (↑x : S¹) ^ n = ↑
 
 /-- Multiplying two elements from `S` in the monoid `S¹` is equivalent to
 multiplying them in `S` and then embedding the result into `S¹`. -/
-lemma with_one_mul {S} [Semigroup S] (x : S) : (↑x : S¹) * (↑x : S¹) = ↑ (x * x : S) := by rfl
+/- toDO: remove this in place of WithOne.coe_mul -/
+lemma with_one_mul {S} [Semigroup S] (x : S) : (↑x : S¹) * (↑x : S¹) = ↑ (x * x : S) := by apply WithOne.coe_mul
 
 end Semigroup
