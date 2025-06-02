@@ -9,10 +9,10 @@ the decidability and finiteness features developed in `GreensRelations.Decidable
 
 ## Computational Demonstrations
 
-**Green's Relations**: Examples of computing `≤𝓡`, `≤𝓛`, `≤𝓙`, `≤𝓗` and `𝓡`, `𝓛`, `𝓙`, `𝓗`
-**Quotient Types**: Usage of `R_class`, `L_class`, `J_class`, `H_class` with decidable equality
+**Green's Relations**: Examples of computing `≤𝓡`, `≤𝓛`, `≤𝓙`, `≤𝓗` and `𝓡`, `𝓛`, `𝓙`, `𝓗` `𝓓`
+**Quotient Types**: Usage of `R_class`, `L_class`, ect. with decidable equality
 **Finset Classes**: Computation of `⟦f⟧𝓡_fin`, `⟦f⟧𝓛_fin`, etc. as explicit finite sets
-**Cosets**: Examples of finite cosets `M •fin a`, `a •fin M`, `M ••fin a`
+**ideals**: Examples of finite ideals  `M •fin a`, `a •fin M`, `M ••fin a`
 **Correspondence Theorems**: Concrete characterizations of Green's classes proven using `decide`
 -/
 
@@ -76,7 +76,8 @@ example : f_112 𝓙 f_221 := by decide +native
 #eval Fintype.card (H_class Threemap)  -- Number of H-classes (13)
 
 -- Enumerating all J-classes (there are exactly 3)
-example : ∀ j : J_class Threemap, j = (⟦f_id⟧𝓙) ∨ j = (⟦f_112⟧𝓙) ∨ j = (⟦f_000⟧𝓙) := by decide +native
+example : ∀ j : J_class Threemap, j = (⟦f_id⟧𝓙) ∨ j = (⟦f_112⟧𝓙) ∨ j = (⟦f_000⟧𝓙) := by
+  decide +native
 
 /-! ### Finset-Based Equivalence Classes -/
 
@@ -86,16 +87,16 @@ example : ∀ j : J_class Threemap, j = (⟦f_id⟧𝓙) ∨ j = (⟦f_112⟧�
 #eval ⟦f_220⟧𝓙_fin
 #eval ⟦f_220⟧𝓗_fin
 
-/-! ### Coset Computations -/
+/-! ### ideal Computations -/
 
-#eval f_000 •fin Threemap¹  -- Left coset of f_000
-#eval f_112 •fin Threemap¹  -- Left coset of f_112
+#eval f_000 •fin Threemap¹  -- right ideal of f_000
+#eval f_112 •fin Threemap¹  -- right ideal of f_112
 
-#eval Threemap¹ •fin f_000  -- right coset of f_000
-#eval Threemap¹ •fin f_id   -- right coset of f_id
+#eval Threemap¹ •fin f_000  -- left ideal of f_000
+#eval Threemap¹ •fin f_id   -- left ideal of f_id
 
-#eval Threemap¹ ••fin f_000  -- Two-sided coset of f_000
-#eval Threemap¹ ••fin f_112  -- Two-sided coset of f_112
+#eval Threemap¹ ••fin f_000  -- Two-sided ideal of f_000
+#eval Threemap¹ ••fin f_112  -- Two-sided ideal of f_112
 
 /-! ### Correspondence Theorems
 
@@ -118,24 +119,37 @@ def image_of_fun (f : Threemap) : Finset (Fin 3) := Finset.image f Finset.univ
 /-- The rank of a function, defined as the cardinality of its image. -/
 def rank (f : Threemap) : Nat := Finset.card (Finset.image f Finset.univ)
 
-/-- **R-Class Correspondence**: Two functions are R-equivalent iff they have the same form. -/
-theorem R_class_form_correspondence (f g : Threemap) :
+/-- **𝓡 Correspondence**: Two functions are R-equivalent iff they have the same form. -/
+theorem R_eqv_form_correspondence (f g : Threemap) :
     f 𝓡 g ↔ form_of_fun f = form_of_fun g := by
   revert f g; decide +native
 
-/-- **L-Class Correspondence**: Two functions are L-equivalent iff they have the same image. -/
-theorem L_class_image_correspondence (f g : Threemap) :
+/-- **𝓛  Correspondence**: Two functions are L-equivalent iff they have the same image. -/
+theorem L_eqv_image_correspondence (f g : Threemap) :
     f 𝓛 g ↔ image_of_fun f = image_of_fun g := by
   revert f g; decide +native
 
-/-- **J-Class Correspondence**: Two functions are J-equivalent iff they have the same rank. -/
-theorem J_class_rank_correspondence (f g : Threemap) :
+/-- **𝓙 Correspondence**: Two functions are J-equivalent iff they have the same rank. -/
+theorem J_eqv_rank_correspondence (f g : Threemap) :
     f 𝓙 g ↔ rank f = rank g := by
   revert f g; decide +native
 
-/-- **H-Class Correspondence**: Two functions are H-equivalent iff they have both the same form and image. -/
-theorem H_class_correspondence (f g : Threemap) :
+/-- **𝓗 Correspondence**: Two functions are H-equivalent iff
+they have both the same form and image. -/
+theorem H_eqv_correspondence (f g : Threemap) :
     f 𝓗 g ↔ form_of_fun f = form_of_fun g ∧ image_of_fun f = image_of_fun g := by
+  revert f g; decide +native
+
+/-- **𝓓 Correspondence**: Same as the 𝓙 -/
+theorem D_eqv_correspondence (f g : Threemap) : f 𝓓 g ↔ f 𝓙 g := by
+  revert f g; decide +native
+
+theorem D_class_fin_eq_J (f: Threemap) : ⟦f⟧𝓓_fin = ⟦f⟧𝓙_fin := by
+  revert f; decide +native
+
+theorem D_class_eq_iff_J (f g: Threemap) :
+    (⟦f⟧𝓓 : D_class Threemap) = (⟦g⟧𝓓 : D_class Threemap) ↔
+    (⟦f⟧𝓙 : J_class Threemap) = (⟦g⟧𝓙 : J_class Threemap) := by
   revert f g; decide +native
 
 end Threemap

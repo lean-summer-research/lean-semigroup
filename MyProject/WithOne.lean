@@ -1,62 +1,68 @@
 import MyProject.PnatPow
 
 /-!
-# WithOne
+# WithOne Construction for Semigroups
 
-This file relates to the `WithOne` construction for adding a unit element to a semigroup, forming a
-monoid denoted as `S¹` (typed as `S\^1`). The original semigroup `S` can be considered a subtype of
-`S¹` via a type coercion.
+This file develops the `WithOne` construction for adjoining a unit element to a semigroup,
+forming a monoid denoted as `S¹`. The original semigroup `S` embeds into `S¹` via type coercion.
 
-## Definitions
+## Main definitions (instances)
 
-Instance Declarations for `S¹`:
-  * `Semigroup.with_one_fintype` - When `S` has a finite type instance, so does `S¹`
+* `WithOne.Monoid` - monoid instance for `S¹` when `S` is a semigroup
+* `WithOne.Finite`
+* `WithOne.Fintype`
+* `WithOne.DecidableEq`
 
-Lemmas relating properties of `S¹` and `S`:
-  * `Semigroup.with_one_pow`
-  * `Semigroup.with_one_mul`
+## Main statements
+
+* `WithOne.pow_eq` - powers in `S¹` correspond to powers in `S`: `(↑x : S¹) ^ n = ↑(x ^ n)`
 
 ## Notations
 
-We define the notation `S¹` for the monoid obtained by adjoining a unit element to the semigroup `S`.
+* `S¹` - the monoid obtained by adjoining a unit element to the semigroup `S` (typed as `S\^1`)
 
 ## Implementation notes
 
-This file depends on `PnatPow.lean` for the semigroup exponentiation operations, and is imported by
-`Idempotence.lean`. The lemmas are used in `Examples/WithOneExample.lean` to translate idempotence
-results from `S¹` to `S`.
+This file depends on `PnatPow.lean` for semigroup exponentiation operations.
 
-## Refrences
+## References
 
-The `WithOne` construction is defined in `Mathlib.Algebra.Group.WithOne`
+The `WithOne` construction is defined in `Mathlib.Algebra.Group.WithOne`.
+
 -/
-
-namespace Semigroup
 
 variable {S} [Semigroup S]
 
 /-- Notation `S¹` for the monoid obtained by adjoining a unit element to the semigroup `S`. -/
 notation S"¹" => WithOne S
 
-/-- The monoid instance for `S¹`. This instance is inferred automatically,
-but we write it out for clarity. -/
-instance with_one_monoid : Monoid (S¹) := by infer_instance
+/-- When `S` is a Semigroup, `S¹` is a Monoid. -/
+instance WithOne.Monoid : Monoid (S¹) := by infer_instance
 
-/-- When `S` has a finite type instance, so does `S¹`. -/
-instance with_one_fintype [Fintype S] : Fintype (S¹) := by unfold WithOne; infer_instance
+/-- When `S` is finite, so is `S¹` -/
+instance WithOne.Finite [inst : Finite S] : Finite (S¹) := by
+  have H := finite_or_infinite (S¹)
+  cases H with
+  | inl hfinite => exact hfinite
+  | inr hinfinite =>
+    exfalso
+    unfold WithOne at *
+    apply Nat.card_eq_zero_of_infinite at hinfinite
+    have H : Nat.card (Option S) = (Nat.card S) + 1 := by
+      simp only [Finite.card_option, Nat.add_left_inj]
+    rw [hinfinite] at H
+    contradiction
 
-instance with_one_decidable [DecidableEq S] : DecidableEq (S¹) := by unfold WithOne; infer_instance
+/-- This registers a procedure for converting an explicit,
+finite list of every element in `S` to a list of every element in `S¹` -/
+instance WithOne.Fintype [Fintype S] : Fintype (S¹) := by unfold WithOne; infer_instance
 
-/-- Taking powers in the monoid `S¹` of an element from the semigroup `S` is
-equivalent to taking powers in `S` and then embedding the result into `S¹`. -/
-lemma with_one_pow {S} [Semigroup S] (x : S) (n : ℕ+) : (↑x : S¹) ^ n = ↑(x ^ n) := by
+/-- When `S` has Decidable Equality, so does `S¹` -/
+instance WithOne.DecidableEq [DecidableEq S] : DecidableEq (S¹) := by unfold WithOne; infer_instance
+
+/-- Taking powers in the monoid `S¹` is equivalent to taking powers in `S`
+and then embedding the result into `S¹`. -/
+lemma WithOne.pow_eq {S} [Semigroup S] (x : S) (n : ℕ+) : (↑x : S¹) ^ n = ↑(x ^ n) := by
   induction n with
   | one => rfl
   | succ n ih => simp_rw [← PNat.pow_succ, PNat.pow_mul_comm', WithOne.coe_mul, ih]
-
-/-- Multiplying two elements from `S` in the monoid `S¹` is equivalent to
-multiplying them in `S` and then embedding the result into `S¹`. -/
-/- toDO: remove this in place of WithOne.coe_mul -/
-lemma with_one_mul {S} [Semigroup S] (x : S) : (↑x : S¹) * (↑x : S¹) = ↑ (x * x : S) := by apply WithOne.coe_mul
-
-end Semigroup

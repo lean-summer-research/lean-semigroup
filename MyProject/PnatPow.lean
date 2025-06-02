@@ -1,49 +1,46 @@
 import Mathlib
 
 /-!
-# PnatPow
+# Positive Natural Number Exponentiation for Semigroups
 
 This file defines exponentiation operations for elements of a semigroup using positive natural
-numbers. It also provides lemmas related to the `PNat` type.
+numbers (`ℕ+`). It provides the foundational definitions and lemmas for semigroup exponentiation.
 
-## Definitions
+## Main definitions
 
-PNat Properties:
-  * `PNat.exists_eq_add_of_lt` - If `m < n` for positive naturals, then there
-  exists a positive `k` such that `n = k + m`
-  * `PNat.add_sub_cancel'`
-  * `PNat.n_lt_2nm`
+* `PNat.pnatPow` - exponentiation function for semigroups over positive naturals
+* `PNat.hPow` - instance providing the notation `a ^ n` for semigroups
 
-Basic Exponentiation:
-  * `PNat.pnatPow`
-  * `PNat.hPow` - Instance providing the notation `a ^ n` for semigroups
-  * `PNat.pow_one`
-  * `PNat.pow_succ`
+## Main statements
 
-Exponentiation lemmas:
-  * `PNat.mul_pow_mul`
-  * `PNat.pow_mul_comm'`
-  * `PNat.pow_add`
-  * `PNat.pow_mul_comm`
-  * `PNat.pow_mul`
-  * `PNat.pow_right_comm`
+* `PNat.pow_add` - power of a sum equals the product of powers: `x ^ m * x ^ n = x ^ (m + n)`
+* `PNat.pow_mul` - power of a power: `(x ^ n) ^ m = x ^ (m * n)`
+* `PNat.pow_mul_comm'` - powers commute with the base element: `x ^ n * x = x * x ^ n`
+* `PNat.pow_pnat_to_nat` - bridge between PNat powers and standard Nat powers in monoids
 
-Special Properties:
-  * `PNat.pow_succ_eq` - Shows that for idempotent elements, all powers equal the element itself
+## Notations
+
+* `a ^ n` - exponentiation for `a : S` and `n : ℕ+` where `S` is a semigroup
 
 ## Implementation notes
 
-The simp-tagged lemmas collectively normalize power expressions whenever you call `simp`.
-For example, an expression like `(a*b)^n * (a*b)^m * a^1 ` would be normalized to `a * (b*a)^(n+m)`
-by calling `simp` on it.
+The simp-tagged lemmas collectively normalize power expressions when calling `simp`.
+For example, `(a * b) ^ n * (a * b) ^ m * a ^ 1` normalizes to `a * (b * a) ^ (n + m)`.
 
-This is the base file in the project, imported by `WithOne.lean`. All other files in the MyProject
-directory import mathlib indirectly through this file.
+This is the base file in the project dependency chain. All other files in MyProject
+import Mathlib indirectly through this file.
 
-## Refrences
+## References
 
-Analagous definitions and lemmas for exponentiation in Monoids can be found in
-`Mathlib.Algebra.Group.Defs`
+Analogous definitions and lemmas for exponentiation in monoids can be found in
+`Mathlib.Algebra.Group.Defs`.
+
+## TODO
+
+* Should we use a notation like `x ^+ n`  for PNat pow instead of using the hPow instance?
+This could be easier becuase it avoids having to deal with the typeclass synthesis which
+can sometimes get confused between PNat and Nat pow when `x` is in a Monoid.
+
 -/
 
 namespace PNat
@@ -57,22 +54,21 @@ lemma exists_eq_add_of_lt {m n : ℕ+} (m_lt_n : m < n) : ∃ (k : ℕ+), n = k 
 @[simp] lemma add_sub_cancel' {n m : ℕ+} (m_lt_n : m < n) : m + (n - m) = n := by
   induction m using PNat.recOn <;> (pnat_to_nat; omega)
 
-/-- For positive naturals, if `n < 2 * n * m` then `n < 2 * n * m`. -/
+/-- For positive naturals, `n < 2 * n * m` -/
 lemma n_lt_2nm (n m : ℕ+) : n < 2 * n * m := by
   induction m using PNat.recOn with
   | one => pnat_to_nat; omega
   | succ m ih => pnat_to_nat; ring_nf; omega
 
-variable {M} [Semigroup M]
+variable {S} [Semigroup S]
 
 /-- Exponentiation for semigroups over positive naturals -/
-def pnatPow (x : M) (n : ℕ+) : M := @PNat.recOn n (fun _ => M) x (fun _ ih => ih * x)
+def pnatPow (x : S) (n : ℕ+) : S := @PNat.recOn n (fun _ => S) x (fun _ ih => ih * x)
 
-/-- Provides the notation `a ^ n` for `pnatPow a n`, analogous to the
-`Pow M ℕ` instance for monoids (in  -/
-instance hPow : Pow M ℕ+ := ⟨pnatPow⟩
+/-- Provides the notation `a ^ n` for `pnatPow a n` -/
+instance hPow : Pow S ℕ+ := ⟨pnatPow⟩
 
-variable (x y : M) (n m : ℕ+)
+variable (x y : S) (n m : ℕ+)
 
 /-- For any element `x` of a semigroup, `x` raised to the power `1` equals `x`. -/
 @[simp] lemma pow_one : x ^ (1 : ℕ+) = x := by rfl
@@ -80,13 +76,13 @@ variable (x y : M) (n m : ℕ+)
 /-- Exponentiation satisfies the successor property -/
 @[simp] lemma pow_succ : (x ^ n) * x = x ^ (n + 1) := by induction n using PNat.recOn <;> rfl
 
-/-- Multiplicative associativity property for powers -/
+/-- Multiplicative associativity for powers -/
 @[simp] lemma mul_pow_mul : (x * y) ^ n * x = x * (y * x) ^ n := by
   induction n using PNat.recOn with
   | one => simp [← mul_assoc]
   | succ n ih => simp only [← pow_succ, ← mul_assoc, ih]
 
-/-- For every `x : M` and `n : ℕ+`, the power `x ^ n` commutes with `x` -/
+/-- For every `x : S` and `n : ℕ+`, the power `x ^ n` commutes with `x` -/
 @[simp] lemma pow_mul_comm' : x ^ n * x = x * x ^ n := by
   induction n using PNat.recOn with
   | one    => rfl
@@ -107,13 +103,16 @@ lemma pow_mul_comm : x ^ m * x ^ n = x ^ n * x ^ m := by rw [pow_add, add_comm, 
   | one    => rw [one_mul, pow_one]
   | succ k ih => simp_rw [← pow_succ, ih, pow_add]; congr; ring
 
-/-- The right-associated powers commute -/
+/-- Right-associated powers commute -/
 lemma pow_right_comm : (x ^ m) ^ n = (x ^ n) ^ m := by simp only [pow_mul, mul_comm]
 
-/-- If `x` is idempotent, then raising `x` to any positive power yields `x`. -/
-lemma pow_succ_eq {x : M} (h_idem : IsIdempotentElem x) : x ^ n = x := by
-  induction n using PNat.recOn with
-  | one    => rfl
-  | succ n' ih => rw [← pow_succ, ih, h_idem]
+/-- Bridge between PNat powers and standard Nat powers in monoids -/
+lemma pow_pnat_to_nat {M} [Monoid M] (x : M) (n : ℕ+) :
+    x ^ n = x ^ (n : ℕ) := by
+  induction n with
+  | one => simp [PNat.pnatPow]
+  | succ n' ih =>
+    rw [PNat.add_coe]; simp
+    rw [ ← PNat.pow_succ, ← Nat.succ_eq_add_one, _root_.pow_succ, ih]
 
 end PNat

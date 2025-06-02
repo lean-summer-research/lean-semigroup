@@ -6,12 +6,17 @@
 - **PnatPow.lean**: Defines exponentiation for semigroups using positive natural numbers
 - **WithOne.lean**: Implements the `S¹` construction for turning semigroups into monoids
 - **Idempotence.lean**: Proves theorems about idempotent elements in finite semigroups
-- **GreensRelations.lean**: Formalizes Green's relations (R, L, J, H) for classifying elements
+
+#### `MyProject/GreensRelations` folder
+- **Defs.lean**: Formalizes Green's relations (R, L, J, H, and D). This file contains Definitions and alternative definitions based on Ideals, anlong with other characterizatoins of Greens Relations
+- **Quot.lean**: This file deals with the representation of equivilance classes of Greens Equivalences as a `Quot` type.
+- **Decidable.lean**: This contains things related to Decidability and Fintype instances for working with Greens relations on concrete examples of Semigroups.
+- **Basic.lean**: This contains lemmas that build upon the foundation defined in earlier files.
 
 ### Examples (`Examples` folder)
-- **Threemap.lean**: Defines the monoid of functions on {0,1,2} under composition and characterizes Greens relations on it.
-- **WithOneExample.lean**: Demonstrates how to apply monoid theorems to semigroups using definitions from `WithOne.lean`
-- **HSversionApr21.lean**: Unchanged
+- **Threemap.lean**: Defines the monoid of functions on {0,1,2} under composition and characterizes Greens relations on it. Demonstrates stuff from `MyProject.GreensRelations.Decidable.lean`
+- **HSversion.lean**: Unchanged
+- **GreensRelationsHS.lean**: Unchanged
 
 ## Import Structure
 ```
@@ -23,9 +28,13 @@ WithOne.lean
   ↓
 Idempotence.lean
   ↓
-GreensRelations.lean
-  ↙          ↘
-Threemap.lean  WithOneExample.lean
+GreensRelations.Defs.lean
+  ↓
+GreensRelations.Quot.lean
+  ↓
+GreensRelations.Decidable.lean
+  ↓
+GreensRelations.Basic.lean
 ```
 
 # Using Github Codespaces
