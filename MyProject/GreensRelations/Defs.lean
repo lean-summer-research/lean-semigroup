@@ -410,7 +410,7 @@ notation:50 f " ∘ᴿ " g:50 => rel_comp f g
 def D_eqv : S → S → Prop := R_eqv ∘ᴿ L_eqv
 infix:50 " 𝓓 " => D_eqv
 
-/-- Straight Definitional lemma of Green's `𝓓` eqvilance -/
+/-- Straight Definitional lemma of Green's `𝓓` equivalence -/
 lemma D_eqv_iff : a 𝓓 b ↔ ∃ x, a 𝓡 x ∧ x 𝓛 b := by simp [D_eqv, rel_comp]
 
 /-- **Green's Commutativity**: R and L relations commute under composition -/
@@ -448,7 +448,7 @@ theorem R_L_comm: (L_eqv ∘ᴿ R_eqv) a b ↔ (R_eqv ∘ᴿ L_eqv) a b := by
         · apply L_eqv_rmult_compat; assumption
         · rw [ mul_assoc]; apply R_eqv_lmult_compat; assumption
 
-/-- Alternate Def of Green's `𝓓` eqvilance -/
+/-- Alternate Def of Green's `𝓓` equivalence -/
 theorem D_eqv_iff_comm : a 𝓓 b ↔ ∃ x, a 𝓛 x ∧ x 𝓡 b := by
   unfold D_eqv; rw [← R_L_comm]; simp [rel_comp]
 
