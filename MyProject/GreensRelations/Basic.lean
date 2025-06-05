@@ -3,85 +3,167 @@ import MyProject.GreensRelations.Decidable
 /-!
 # Basic Properties of Green's Relations
 
-This file establishes basic properties of Green's relations.
+This file establishes fundamental properties of Green's relations in semigroups, particularly
+in finite semigroups.
 
 ## Main statements
 
-* `D_iff_J_finite` - **D-J Theorem**: in finite semigroups, 𝓓 = 𝓙
-Prop 1.4:
-* `le_R_idempotent` : if e ∈ S idempotent, then e ≤𝓡 a iff a = ea for all a ∈ S
-* `le_L_idempotent` : if e ∈ S idempotent, then e ≤𝓛 a iff a = ae for all a ∈ S
-* `le_J_rmult_implies_J_R_rel` : if a ≤𝓙 ax then a 𝓙 ax and a 𝓡 ax
-* `le_J_lmult_implies_J_L_rel` : if a ≤𝓙 xa then a 𝓙 xa and a 𝓛 xa
-* `le_R_double_implies_R_rel` : if a ≤𝓡 axy then a 𝓡 ax 𝓡 axy
-* `le_L_double_implies_L_rel` : if a ≤𝓛 yxa then a 𝓛 xa 𝓛 yxa
-* `le_R_and_J_rel_implies_R_rel` : if a ≤𝓡 b and a 𝓙 b then a 𝓡 b
-* `le_L_and_J_rel_implies_L_rel` : if a ≤𝓛 b and a 𝓙 b then a 𝓛 b
+* `R_eqv_right_cancel`, `L_eqv_left_cancel`: Cancellation properties of 𝓡 and 𝓛 relations
+* `exists_pow_sandwich_eq_self`: A key lemma in proofs on Finite Semigroups.
+* `D_iff_J_finite`: The D-J theorem for finite semigroups
+* `le_R_idempotent`, `le_L_idempotent`: Characterization of elements below idempotents
+* `R_eqv_of_J_mul_right`, `L_eqv_of_J_mul_left`: Shows how 𝓙 equivilance "strengthens"
+  𝓡 and 𝓛 preorders to equivalences in finite semigroups.
 
-Green's Lemma (1.5):
-[Includes some subsidiary definitions/notation at the beginning, should move to Defs]
-* `Greens_lemma_R_rel_ab`
-* `Greens_lemma_R_rel_ba`
-* `Greens_lemma_r_trans_preserves_H_ab`
-* `Greens_lemma_r_trans_preserves_H_ba`
-* `Greens_lemma_inverse_bijections_r_trans`
-* `Greens_lemma_L_rel_ab`
-* `Greens_lemma_L_rel_ba`
-* `Greens_lemma_l_trans_preserves_H_ab`
-* `Greens_lemma_l_trans_preserves_H_ba`
-* `Greens_lemma_inverse_bijections_l_trans`
-
-## Implementation notes
-
+## TODO
+* Finish Greens Lemma
 -/
 
-/-! ## The D-J Theorem for Finite Semigroups -/
+/-! ### Simp Lemmas
+This section provides lemmas tagged with @[simp]. For lemmas that take hypothesis
+like `h : a ≤𝓡 a * b`, make sure that you call `simp [h]` to use them. -/
 
-variable {S} [Semigroup S] (a b : S)
-/-- Every D-related pair is J-related -/
+section Simp_Lemmas
+
+variable {S} [Semigroup S] (a x y : S)
+
+/-- `a * x` is always `≤𝓡 a` -/
+@[simp] lemma mul_right_R_preorder_self : a * x ≤𝓡 a := by
+  use x; rw [WithOne.coe_mul]
+
+/-- `x * a` is always `≤𝓛 a` -/
+@[simp] lemma mul_left_L_preorder_self : x * a ≤𝓛 a := by
+  use x; rw [WithOne.coe_mul]
+
+/-- `x * a * y` is always `≤𝓙 a` -/
+@[simp] lemma mul_sandwich_J_preorder_self : x * a * y ≤𝓙 a := by
+  use x, y; simp
+
+variable {a x y : S}
+
+/-- `a ≤𝓡 a * x` implies `a 𝓡 a * x` -/
+@[simp] lemma R_eqv_of_R_preorder_mul_right (h : a ≤𝓡 a * x) : a 𝓡 a * x := by
+  simpa [R_eqv_iff]
+
+/-- `a ≤𝓛 x * a` implies `a 𝓛 b * a` -/
+@[simp] lemma L_eqv_of_L_preorder_mul_left (h : a ≤𝓛 x * a) : a 𝓛 x * a := by
+  simpa [L_eqv_iff]
+
+/-- `a ≤𝓙 x * a * y` implies `a 𝓙 x * a * y` -/
+@[simp] lemma J_eqv_of_J_preorder_mul_sandwich (h : a ≤𝓙 x * a * y) : a 𝓙 x * a * y := by
+  simpa [J_eqv_iff]
+
+end Simp_Lemmas
+
+/-! ### Lemmas for 𝓡 and 𝓛 equivalences (Prop 1.4.3)
+This section establishes cancellation and extension properties for Green's 𝓡 and 𝓛 relations. -/
+
+section RL_Lemmas
+
+variable {S} [Semigroup S] {a x y : S}
+
+/-! Lemmas assuming `a 𝓡 axy` -/
+
+/-- If `a 𝓡 a * x * y`, then `a 𝓡 a * x`. -/
+lemma R_eqv_right_cancel (h : a 𝓡 a * x * y) : a 𝓡 a * x := by
+  simp_all [R_eqv_iff]
+  obtain ⟨⟨u, hu⟩, _⟩ := h
+  use y * u; simp_rw [WithOne.coe_mul, ← mul_assoc] at *
+  exact hu
+
+/-- If `a 𝓡 a * x * y`, then `a * x 𝓡 a * x * y`.-/
+lemma R_eqv_right_extend (h : a 𝓡 a * x * y) : a * x 𝓡 a * x * y := by
+  simp_all [R_eqv_iff]
+  obtain ⟨⟨u, hu⟩, _⟩ := h
+  use u * x; simp_rw [WithOne.coe_mul, ← mul_assoc] at *
+  rw [← hu]
+
+/-! Lemmas assuming `a 𝓛 yxa` -/
+
+/-- If `a 𝓛 y * x * a`, then `a 𝓛 x * a`. -/
+theorem L_eqv_left_cancel (h: a 𝓛 y * x * a ) : a 𝓛 x * a := by
+  simp_all [L_eqv_iff]
+  obtain ⟨u, hu⟩ := h
+  use u * y; simp_rw [WithOne.coe_mul, ← mul_assoc] at *
+  exact hu
+
+/-- If `a 𝓛 y * x * a`, then `x * a 𝓛 y * x * a`. -/
+theorem L_eqv_left_extend (h : a 𝓛 y * x * a) : x * a 𝓛 y * x * a := by
+  simp_all [L_eqv_iff]
+  constructor
+  · obtain ⟨u, hu⟩ := h
+    use x * u; simp_rw [WithOne.coe_mul, mul_assoc] at *
+    rw [← hu]
+  · simp [mul_assoc]
+
+end RL_Lemmas
+
+/-! ### Lemmas for Monoids -/
+
+section Monoid_Lemmas
+
+variable {M} [Monoid M] {a x y : M}
+
+/-- In finite monoids, if `a = x * a * y`, then there exist positive integers `n₁` and `n₂`
+such that `x ^ n₁ * a = a` and `a * y ^ n₂ = a`. -/
+lemma exists_pow_sandwich_eq_self [Finite M] (h : a = x * a * y) :
+    ∃ n₁ n₂ : ℕ, n₁ ≠ 0 ∧ n₂ ≠ 0 ∧ x ^ n₁ * a = a ∧ a * y ^ n₂ = a := by
+  have loop : ∀ k : ℕ, x ^ k * a * y ^ k = a := by
+    intro k; induction k with
+    | zero => simp
+    | succ n ih =>
+      rw [pow_succ, pow_succ']
+      rw [← mul_assoc, mul_assoc _ a, mul_assoc _ x, ← mul_assoc x a y, ← h, ih]
+  have ⟨n₁, ⟨hn₁, hneq₁⟩⟩ := Monoid.exists_idempotent_pow x
+  have ⟨n₂, ⟨hn₂, hneq₂⟩⟩ := Monoid.exists_idempotent_pow y
+  use n₁, n₂
+  constructor; exact hneq₁; constructor; exact hneq₂; constructor
+  · rw [← (loop n₁), ← mul_assoc, ← mul_assoc, hn₁]
+  · rw [← (loop n₂), mul_assoc, hn₂]
+
+end Monoid_Lemmas
+
+/-! ### The D-J Theorem for Finite Semigroups -/
+
+section D_J
+
+variable {S} [Semigroup S] {a b : S}
+
+/-- Every 𝓓-related pair is 𝓙-related. -/
 lemma D_eqv_if : a 𝓓 b → a 𝓙 b := by
-  simp [D_eqv, rel_comp, J_eqv_iff]
+  simp [D_eqv_iff, J_eqv_iff]
   rintro x ⟨⟨c, hc⟩, ⟨d, hd⟩⟩ ⟨⟨f, hf⟩, ⟨g, hg⟩⟩
   constructor
   · use f, c; rw [← hf, ← hc]
   · use g, d; rw [mul_assoc, ← hd, hg]
 
-/-- **D-J Theorem**: In finite semigroups, Green's D-relation equals the J-relation -/
+/-- In finite semigroups, Green's 𝓓-relation equals the 𝓙-relation. The forward direction
+always holds, but finiteness is needed for the reverse implication. -/
 theorem D_iff_J_finite [Finite S] : a 𝓓 b ↔ a 𝓙 b := by
   constructor
   · apply D_eqv_if
-  · rintro ⟨⟨x, y, ha⟩, ⟨u, v, hb⟩⟩
-    have loop : ∀ n : ℕ, (x * u)^n * ↑a * (v * y)^n = a := by
-      intros n; induction n with
-      | zero => simp
-      | succ n ih =>
-        conv => lhs; lhs; rw [pow_succ, mul_assoc]
-        conv => lhs; rhs; rw [pow_succ']
-        have rw_assoc : (x * u)^ n * (x * u * ↑a) * (v * y * (v * y)^ n) =
-            (x*u)^ n * (x * (u * a * v) * y) * (v*y)^n := by simp [mul_assoc]
-        rw [rw_assoc, ← hb, ← ha, ih]
-    have ⟨k, ⟨he, hene⟩⟩ := Monoid.exists_idempotent_pow (x * u)
-    have ⟨l, ⟨hf, hfne⟩⟩ := Monoid.exists_idempotent_pow (v * y : S¹)
-    have heq1 : (x * u)^ k * a = a := by rw [← (loop k), ← mul_assoc, ← mul_assoc, he]
-    have heq2 : a * (v * y)^ l = a := by rw [← (loop l), mul_assoc, hf]
+  · intro hJ
+    have hJ_copy := hJ; obtain ⟨⟨x, y, ha⟩, ⟨u, v, hb⟩⟩ := hJ_copy
+    have hab : ↑a = x * u * a * (v * y) := by
+      rw [hb, ← mul_assoc, ← mul_assoc, mul_assoc _ v y] at ha
+      exact ha
+    obtain ⟨k, l, hene, hfne, heq1, heq2⟩ := exists_pow_sandwich_eq_self hab
     cases v with
     | one =>
-      use a; constructor
-      · apply eqv_of_preorder_refl
-      · rw [L_eqv_iff]; constructor
-        · rw [one_mul, mul_one] at *; use (x * u)^(k-1) * x
-          have hk : k - 1 + 1 = k := by exact Nat.succ_pred_eq_of_ne_zero hene
-          rw [hb, ← mul_assoc, mul_assoc _ x u, ← pow_succ, hk, heq1]
-        · use u; rw [hb, mul_one]
+      use a; rw [one_mul, mul_one] at *; simp [L_eqv_iff]
+      constructor
+      · use (x * u)^(k-1) * x
+        have hk : k - 1 + 1 = k := by exact Nat.succ_pred_eq_of_ne_zero hene
+        rw [hb, ← mul_assoc, mul_assoc _ x u, ← pow_succ, hk, heq1]
+      · use u
     | coe v =>
       use a * v
+      simp [R_eqv_iff, L_eqv_iff]
       constructor
-      · constructor
-        · use y * (v * y)^ (l - 1)
-          rw [WithOne.coe_mul, ← mul_assoc, mul_assoc ↑a ↑v y, mul_assoc,  ← pow_succ' ]
-          have hl : l - 1 + 1 = l := by exact Nat.succ_pred_eq_of_ne_zero hfne
-          rw [hl, heq2]
-        · use v; simp
+      · use y * (v * y) ^ (l - 1)
+        rw [WithOne.coe_mul, ← mul_assoc, mul_assoc ↑a ↑v y, mul_assoc,  ← pow_succ']
+        have hl : l - 1 + 1 = l := by exact Nat.succ_pred_eq_of_ne_zero hfne
+        rw [hl, heq2]
       · constructor
         · use (x * u)^(k-1) * x; rw [hb]
           conv => rhs; rw [← mul_assoc, ← mul_assoc, mul_assoc _ x u]
@@ -89,201 +171,89 @@ theorem D_iff_J_finite [Finite S] : a 𝓓 b ↔ a 𝓙 b := by
           rw [WithOne.coe_mul, ← pow_succ, hk, heq1]
         · use u; simp [hb, mul_assoc]
 
-theorem le_R_idempotent {e : S} (h: IsIdempotentElem e) : (a ≤𝓡 e) ↔ (a = e * a) := by
+end D_J
+
+/-! ### Idempotent properties (Prop 1.4.1)
+This section characterizes elements that are 𝓡- below or 𝓛- below an idempotent. -/
+
+section Idempotent_Props
+
+variable {S} [Semigroup S] (a e : S)
+
+/-- An element `a` is 𝓡-below an idempotent `e` if and only if `a = e * a`. -/
+theorem le_R_idempotent (h: IsIdempotentElem e) : (a ≤𝓡 e) ↔ (a = e * a) := by
   constructor
-  · intro hr
-    have he : ↑e = ↑(e * e) := h.symm
-    obtain ⟨u, hru⟩ := hr
-    rw[<-WithOne.coe_inj]
-    calc
-      a = ↑e * u := hru
-      _ = ↑(e * e) * u := by rw[<-he]
-      _ = ↑e * (↑e * u) := by rw[WithOne.coe_mul, mul_assoc]
-      _ = ↑e * a := by rw[<-hru]
-  · intro hl
-    rw[<-WithOne.coe_inj] at hl
-    use (↑e * ↑a)
-    nth_rw 1[<-mul_assoc, <-WithOne.coe_mul, h]
-    exact hl
+  · rintro ⟨u, hru⟩
+    unfold IsIdempotentElem at h
+    rw [← WithOne.coe_inj, WithOne.coe_mul] at h ⊢
+    rw [hru, ← mul_assoc, h ]
+  · intro hl; use a
+    rw[<-WithOne.coe_inj] at hl; exact hl
 
-theorem le_L_idempotent {e : S} (h: IsIdempotentElem e) : (a ≤𝓛 e) ↔ (a = a * e) := by
+/-- An element `a` is 𝓛-below an idempotent `e` if and only if `a = a * e`. -/
+theorem le_L_idempotent (h: IsIdempotentElem e) : (a ≤𝓛 e) ↔ (a = a * e) := by
   constructor
-  · intro hr
-    have he : ↑e = ↑(e * e) := h.symm
-    obtain ⟨u, hru⟩ := hr
-    rw[<-WithOne.coe_inj]
-    calc
-      ↑a = u * ↑e := hru
-      _ = u * ↑(e * e) := by rw[<-he]
-      _ = (u * ↑e) * ↑e := by rw[WithOne.coe_mul, mul_assoc]
-      _ = a * ↑e := by rw[<-hru]
-  · intro hl
-    rw[<-WithOne.coe_inj] at hl
-    use (↑a * ↑e)
-    conv => lhs
-    rw[mul_assoc, <-WithOne.coe_mul, h]
-    exact hl
+  · rintro ⟨u, hru⟩
+    unfold IsIdempotentElem at h
+    rw [← WithOne.coe_inj, WithOne.coe_mul] at h ⊢
+    rw [hru, mul_assoc, h ]
+  · intro hl; use a
+    rw[<-WithOne.coe_inj] at hl; exact hl
 
-theorem le_J_rmult_implies_J_R_rel [Finite S] (h: a ≤𝓙 a * b) : (a 𝓙 a * b) ∧ (a 𝓡 a * b) := by
-  constructor
-  · have h1: a * b ≤𝓙 a := by use 1, b; simp
-    exact ⟨h,h1⟩
-  · constructor
-    · obtain ⟨u, v, hr⟩ := h
-      have loop : ∀ n : ℕ, (u)^n * ↑a * (b * v)^n = a := by
-        intros n; induction n with
-        | zero => simp
-        | succ n ih =>
-          conv => lhs; lhs; rw [pow_succ, mul_assoc]
-          conv => lhs; rhs; rw [pow_succ']
-          simp_rw[<-mul_assoc]
-          rw[mul_assoc (u ^ n * u * ↑a)]
-          nth_rw 2[<-pow_one u]; nth_rw 1[<-pow_one (↑b * v)]
-          rw[pow_mul_comm u, mul_assoc, pow_mul_comm (↑b * v)]
-          have rw_assoc : u ^ 1 * u ^ n * ↑a * ((↑b * v) ^ n * (↑b * v) ^ 1) =
-            u^1 * (u ^ n * ↑a * (↑b * v) ^ n) * (↑b * v) ^ 1 := by simp[mul_assoc]
-          simp_rw[rw_assoc, ih, pow_one]
-          nth_rw 2[hr]; simp[mul_assoc]
-      have ⟨l, hu⟩ := Monoid.exists_idempotent_pow u
-      have hul : u^↑l * u^↑l = u^↑l := hu.left
-      have hl : u^l * a = a := by
-        calc
-        u^↑l * a = u^↑l * (u^↑l * a * (b * v)^↑l) := by rw[loop l]
-              _ = u^↑l * u^↑l * a * (b * v)^↑l :=by repeat rw[<-mul_assoc]
-              _ = u^↑l * a * (b * v)^↑l := by simp_rw[hul]
-              _ = a := by rw[loop l]
-      have loopl := loop l
-      use (v * (b * v)^(l-1))
-      repeat rw[<-mul_assoc]
-      rw[WithOne.coe_mul]; nth_rw 2[<-hl]
-      rw[mul_assoc (u^l * a)]; nth_rw 1[<-pow_one (b * v)]
-      have hsub : (↑b * v) ^ 1 * (↑b * v) ^ (↑l - 1) = (↑b * v) ^↑l := by
-        rw[<-pow_add (b * v) 1 (↑(l-1))]
-        have hpow: (1 + ↑(l - 1)) = l := by
-          refine Nat.add_sub_of_le ?_
-          exact (Nat.pos_of_ne_zero hu.right)
-        have hl : (↑b * v) ^ (1 + ↑(l - 1)) = (↑b * v) ^ ↑l := by
-          simp_rw[hpow]
-        exact hl
-      conv => lhs
-      simp_rw[mul_assoc (u^l * ↑a), hsub]; exact loopl.symm
-    · use b; rw[WithOne.coe_mul]
+end Idempotent_Props
 
-theorem le_J_lmult_implies_J_L_rel [Finite S] (h: a ≤𝓙 b * a) : (a 𝓙 b * a) ∧ (a 𝓛 b * a) := by
-  constructor
-  · have h1: b * a ≤𝓙 a := by use b, 1; simp
-    exact ⟨h,h1⟩
-  · constructor
-    · obtain ⟨u, v, hr⟩ := h
-      have loop : ∀ n : ℕ, (u * b)^n * ↑a * (v)^n = a := by
-        intros n; induction n with
-        | zero => simp
-        | succ n ih =>
-          conv => lhs; lhs; rw [pow_succ, mul_assoc]
-          conv => lhs; rhs; rw [pow_succ']
-          simp_rw[<-mul_assoc]
-          have rw_assoc :  (u * ↑b) ^ n * u * ↑b * ↑a * v * v ^ n =
-            (u * ↑b) ^ n * (u * ↑b)^1 * ↑a * v^1 * v ^ n := by
-            rw[mul_assoc ((u * ↑b) ^ n)]
-            nth_rw 2[<-pow_one (u * ↑b)]
-            nth_rw 1[<-pow_one (v)]
-          rw[rw_assoc, pow_mul_comm (u * ↑b), mul_assoc, pow_mul_comm (v)]
-          have rw_assoc : (u * ↑b)^ 1 * (u*↑b) ^ n * ↑a * (v^ n * v^ 1) =
-            (u * ↑b)^ 1 * ((u*↑b) ^ n * ↑a * v^ n) * v^ 1 := by simp[mul_assoc]
-          simp_rw[rw_assoc, ih, pow_one]
-          nth_rw 2[hr]; simp[mul_assoc]
-      have ⟨l, hv⟩ := Monoid.exists_idempotent_pow v
-      have hvl : v^l * v^l = v^l := hv.left
-      have hl : a = a * v^l := by
-        calc
-        a = (u * b)^l * a * v^l := by rw[loop l]
-        _ = (u * b)^l * a * (v^l * v^l) := by rw[hvl]
-              _ = ((u * b)^l * a * v^l) * v^l := by simp_rw[mul_assoc]
-              _ = a * v^l := by rw[loop l]
-      have loopl := loop l
-      use ((u * b)^(l-1) * u)
-      rw[WithOne.coe_mul]; nth_rw 2[hl]; repeat rw[<-mul_assoc]
-      have h_assoc : (u * ↑b) ^ (l - 1) * u * ↑b * ↑a * v^l =
-        (u * ↑b) ^ (l - 1) * (u * ↑b)^ 1 * ↑a * v^l := by
-        simp[mul_assoc]
-      rw[h_assoc]
-      have hsub : (u * b) ^ (l - 1) * (u * b) ^ 1 = (u * b) ^l := by
-        refine pow_sub_mul_pow (u * ↑b) ?_
-        exact (Nat.pos_of_ne_zero hv.right)
-      rw[hsub]; exact loopl.symm
-    · use b; rw[WithOne.coe_mul]
+/-! ### Properties relating J, L, and R (Proposition 1.4.2 and 1.4.4)
+This section shows how 𝓙-equivalence "strengthens"
+𝓡 and 𝓛 preorders to equivalences in finite semigroups. -/
 
-theorem le_R_double_implies_R_rel {x y : S} (h: a ≤𝓡 a * x * y) : (a 𝓡 a * x) ∧ (a * x 𝓡 a * x * y) ∧ (a 𝓡 a * x * y) := by
-  have ⟨z, ha⟩:= h
-  have haax : a ≤𝓡 a * x := by
-    use ↑y * ↑z; simp_rw[WithOne.coe_mul] at ha
-    simp_rw[<-mul_assoc, WithOne.coe_mul, <-ha]
-  have hxxy : a * x ≤𝓡 a * x * y := by
-    use ↑z * ↑x; rw[<-mul_assoc, <-ha, WithOne.coe_mul]
-  have hxya : a * x * y ≤𝓡 a := by
-    use ↑x * ↑y; simp_rw[<-mul_assoc, WithOne.coe_mul]
-  exact ⟨⟨haax, (by use x; rw[WithOne.coe_mul])⟩,
-    ⟨hxxy, (by use y; rw[WithOne.coe_mul])⟩, ⟨h, hxya⟩⟩
+section J_R_L_Props
 
-theorem le_L_double_implies_L_rel {x y : S} (h: a ≤𝓛 y * x * a) : (a 𝓛 x * a) ∧ (x * a 𝓛 y * x * a) ∧ (a 𝓛 y * x * a) := by
-  have ⟨z, ha⟩:= h
-  simp_rw[WithOne.coe_mul, <-mul_assoc] at ha
-  have haxa : a ≤𝓛 x * a := by
-    use ↑z * ↑y; rw[ha, WithOne.coe_mul, <-mul_assoc]
-  have hxyx : x * a ≤𝓛 y * x * a:= by
-    use ↑x * ↑z; simp_rw[WithOne.coe_mul, <-mul_assoc]; nth_rw 1[ha];
-    simp_rw[<-mul_assoc]
-  exact ⟨⟨haxa, (by use x; rw[WithOne.coe_mul])⟩,
-    ⟨hxyx, by use y; simp_rw[WithOne.coe_mul, mul_assoc]⟩,
-    ⟨h, (by use (y * x); simp_rw[WithOne.coe_mul])⟩⟩
+variable {S} [Semigroup S] [Finite S] {a b : S}
 
-theorem le_R_and_J_rel_implies_R_rel [Finite S] (h1 : a ≤𝓡 b) (h2: a 𝓙 b) : a 𝓡 b := by
-  rw[R_preorder_iff_without_one] at h1
-  cases h1 with
-  | inl h1.left => rw[h1.left]; exact (R_eqv_iff_ideal b b).mpr rfl
-  | inr h1.right =>
-      obtain ⟨u, h1⟩ := h1.right
-      obtain ⟨h2l, ⟨v, w, h2r⟩⟩ := h2
-      have hub : b * u 𝓙 b := by
-        constructor
-        · use 1, u
-          simp
-        · use v, w; rw[<-h1, h2r]
-      have h: b 𝓙 b * u ∧ b 𝓡 b * u := by
-        refine le_J_rmult_implies_J_R_rel b u ?_
-        refine (J_preorder_iff b (b * u)).mpr ?_
-        exact hub.right
-      have hr := h.right
-      rw[h1]
-      refine (R_eqv_iff (b * u) b).mpr ?_
-      have : b * u ≤𝓡 b ∧ b ≤𝓡 b * u := by
-        unfold R_eqv at hr
-        simp_all
-      exact this
+/-- In finite semigroups, if `a` is 𝓙-related to `a * b`, then `a` is 𝓡-related to `a * b`. -/
+lemma R_eqv_of_J_mul_right (hj : a 𝓙 a * b) : a 𝓡 a * b := by
+  obtain ⟨⟨x, y, hxy⟩, _⟩ := hj
+  rw [WithOne.coe_mul, ← mul_assoc, mul_assoc] at hxy
+  simp [R_eqv_iff]
+  obtain ⟨_, n, _, hneq, _, ha ⟩ := exists_pow_sandwich_eq_self hxy
+  use y * (↑b * y) ^ (n - 1)
+  simp_rw [WithOne.coe_mul, ← mul_assoc, mul_assoc ↑a ↑b y]
+  rw [mul_assoc ↑a (↑b * y), ← pow_succ']
+  have hl : n - 1 + 1 = n := by exact Nat.succ_pred_eq_of_ne_zero hneq
+  rw [hl, ha]
 
-theorem le_L_and_J_rel_implies_R_rel [Finite S] (h1 : a ≤𝓛 b) (h2: a 𝓙 b) : a 𝓛 b := by
-  rw[L_preorder_iff_without_one] at h1
-  cases h1 with
-  | inl h1.left => rw[h1.left]; exact (L_eqv_iff_ideal b b).mpr rfl
-  | inr h1.right =>
-      obtain ⟨u, h1⟩ := h1.right
-      obtain ⟨h2l, ⟨v, w, h2r⟩⟩ := h2
-      have hub : u * b 𝓙 b := by
-        constructor
-        · use u, 1
-          simp
-        · use v, w; rw[<-h1, h2r]
-      have h: b 𝓙 u * b ∧ b 𝓛 u * b := by
-        refine le_J_lmult_implies_J_L_rel b u ?_
-        refine (J_preorder_iff b (u * b)).mpr ?_
-        exact hub.right
-      have hr := h.right
-      rw[h1]
-      refine (L_eqv_iff (u * b) b).mpr ?_
-      have : u * b ≤𝓛 b ∧ b ≤𝓛 u * b := by
-        unfold L_eqv at hr
-        simp_all
-      exact this
+/-- In finite semigroups, if `a` is 𝓡-below `b` and `a 𝓙 b`, then `a 𝓡 b`. -/
+theorem R_eqv_of_R_preorder_and_J (hr : a ≤𝓡 b) (hj: a 𝓙 b) : a 𝓡 b := by
+  rw [R_preorder_iff_without_one] at hr
+  cases hr with
+  | inl heq => subst heq; simp
+  | inr ha =>
+    obtain ⟨u, hru⟩ := ha; subst hru;
+    rw [J_eqv_symm, R_eqv_symm] at *
+    apply R_eqv_of_J_mul_right; assumption
+
+/-- In finite semigroups, if `a` is 𝓙-related to `b * a`, then `a` is 𝓛-related to `b * a`. -/
+lemma L_eqv_of_J_mul_left (hj : a 𝓙 b * a) : a 𝓛 b * a := by
+  obtain ⟨⟨x, y, hxy⟩, _⟩ := hj
+  rw [WithOne.coe_mul, ← mul_assoc ] at hxy
+  simp [L_eqv_iff]
+  obtain ⟨ n, _, hneq, _, ha, _ ⟩ := exists_pow_sandwich_eq_self hxy
+  use (x * ↑b) ^ (n - 1) * x
+  simp_rw [WithOne.coe_mul, ← mul_assoc, mul_assoc _ x, ← pow_succ]
+  have hl : n - 1 + 1 = n := by exact Nat.succ_pred_eq_of_ne_zero hneq
+  rw [hl, ha]
+
+/-- In finite semigroups, if `a` is 𝓛-below `b` and `a 𝓙 b`, then `a 𝓛 b`. -/
+theorem L_eqv_of_L_preorder_and_J (hl : a ≤𝓛 b) (hj: a 𝓙 b) : a 𝓛 b := by
+  rw [L_preorder_iff_without_one] at hl
+  cases hl with
+  | inl heq => subst heq; simp
+  | inr ha =>
+    obtain ⟨u, hru⟩ := ha; subst hru;
+    rw [J_eqv_symm, L_eqv_symm] at *
+    apply L_eqv_of_J_mul_left; assumption
+
+end J_R_L_Props
 
 
 /-!
@@ -307,6 +277,10 @@ consequently it's not clear to me that S must be finite for Green's Lemma to hol
 Is this true?
 5. Would it be more lucid to characterize these theorems in terms of ideals?
 -/
+
+section Greens_Lemma
+
+variable {S} [Semigroup S] {a b : S}
 
 /-Necessary definitions-- to be moved-/
 def R_translation (a : S) : S → S := (· * a)
@@ -371,3 +345,5 @@ theorem Greens_lemma_inverse_bijections_l_trans {u v : S}
     Function.RightInverse (ρₗ v) (ρₗ u) ∧
     Function.LeftInverse (ρₗ v) (ρₗ u) := by
   sorry
+
+end Greens_Lemma

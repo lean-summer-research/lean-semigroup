@@ -108,10 +108,10 @@ theorem J_preorder_iff (a b : S) : a ≤𝓙 b ↔ ∃ x y : S¹, a = x * b * y 
 theorem H_preorder_iff (a b : S) : a ≤𝓗 b ↔ a ≤𝓡 b ∧ a ≤𝓛 b := by simp [H_preorder]
 
 /-! Reflexivity lemmas -/
-lemma R_preorder_refl (x : S) : x ≤𝓡 x := by use 1; simp
-lemma L_preorder_refl (x : S) : x ≤𝓛 x := by use 1; simp
-lemma J_preorder_refl (x : S) : x ≤𝓙 x := by use 1, 1; simp
-lemma H_preorder_refl (x : S) : x ≤𝓗 x := by
+@[simp] lemma R_preorder_refl (x : S) : x ≤𝓡 x := by use 1; simp
+@[simp] lemma L_preorder_refl (x : S) : x ≤𝓛 x := by use 1; simp
+@[simp] lemma J_preorder_refl (x : S) : x ≤𝓙 x := by use 1, 1; simp
+@[simp] lemma H_preorder_refl (x : S) : x ≤𝓗 x := by
   unfold H_preorder; apply And.intro <;> use 1; simp; rw [one_mul]
 
 /-! Transitivity lemmas -/
@@ -166,6 +166,23 @@ lemma L_eqv_iff (a b : S) : a 𝓛 b ↔ a ≤𝓛 b ∧ b ≤𝓛 a := by unfol
 lemma J_eqv_iff (a b : S) : a 𝓙 b ↔ a ≤𝓙 b ∧ b ≤𝓙 a := by unfold J_eqv; simp
 lemma H_eqv_iff (a b : S) : a 𝓗 b ↔ a ≤𝓗 b ∧ b ≤𝓗 a := by unfold H_eqv; simp
 
+variable {a b : S}
+
+/-! Reflexivity Lemmas -/
+@[simp] lemma R_eqv_refl : a 𝓡 a := by constructor <;> simp
+@[simp] lemma L_eqv_refl : a 𝓛 a := by constructor <;> simp
+@[simp] lemma J_eqv_refl : a 𝓙 a := by constructor <;> simp
+@[simp] lemma H_eqv_refl : a 𝓗 a := by constructor <;> simp
+
+/-! Symmetry Lemmas -/
+lemma R_eqv_symm : a 𝓡 b ↔ b 𝓡 a := by
+  constructor <;> (intros h; apply eqv_of_preorder_symm; simp_all [R_eqv_iff])
+lemma L_eqv_symm : a 𝓛 b ↔ b 𝓛 a := by
+  constructor <;> (intros h; apply eqv_of_preorder_symm; simp_all [L_eqv_iff])
+lemma J_eqv_symm : a 𝓙 b ↔ b 𝓙 a := by
+  constructor <;> (intros h; apply eqv_of_preorder_symm; simp_all [J_eqv_iff])
+lemma H_eqv_symm : a 𝓗 b ↔ b 𝓗 a := by
+  constructor <;> (intros h; apply eqv_of_preorder_symm; simp_all [H_eqv_iff])
 end CoreDefinitions
 
 /-! ### Alternative characterizations of 𝓗 -/
@@ -452,7 +469,7 @@ theorem R_L_comm: (L_eqv ∘ᴿ R_eqv) a b ↔ (R_eqv ∘ᴿ L_eqv) a b := by
 theorem D_eqv_iff_comm : a 𝓓 b ↔ ∃ x, a 𝓛 x ∧ x 𝓡 b := by
   unfold D_eqv; rw [← R_L_comm]; simp [rel_comp]
 
-lemma D_eqv_refl (a : S) : a 𝓓 a := by
+@[simp] lemma D_eqv_refl (a : S) : a 𝓓 a := by
   simp [D_eqv_iff]; use a; constructor <;> apply eqv_of_preorder_refl
 
 lemma D_eqv_symm : a 𝓓 b → b 𝓓 a := by
