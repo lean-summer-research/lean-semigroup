@@ -1,3 +1,12 @@
+# TODO
+
+- "Least monoid containing a semigroup" implementation in WithOne.lean
+- Relate Ideal definition to Closure definition rather than generators
+- Duality of L and R through "Reverse Semigroup"
+  - Reverse Semigroup S^rev - The same elements but multiplication is reversed
+    - This means we have two semigroups defined on the same type (does it have to be unbundled?)
+    
+
 # Project Structure
 
 ## Files and Organization
