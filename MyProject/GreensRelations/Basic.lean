@@ -255,95 +255,208 @@ theorem L_eqv_of_L_preorder_and_J (hl : a ≤𝓛 b) (hj: a 𝓙 b) : a 𝓛 b :
 
 end J_R_L_Props
 
-
-/-!
-# Green's Lemma (Prop 1.5)
-Some notes about statement of parts of this lemma. Not sure if I've done so in
-the best way.
-1. (More of a quibble)
-We have the hypotheses a𝓡b or a𝓛b, respectively, but we need to call upon
-the actual witnesses of these relations in stating the conclusion of the lemma;
-hence we need to incorporate hypotheses (h1: b = a * ↑u)(h2: a= b * ↑v). I'm not sure what
-the most elegant way to state this is. Technically, we don't need to state the equivalence
-relation directly, but omitting feels uncomfortable. Should we remove the
-hypotheses h1/h2 and write these instead as implications?
-2. We need to define right/left translation on semigroups and set instances of
-R/L classes that are not necessarily finite. These should probably be incorporated
-into Defs.
-3. To what extent should these statements be presented as separate theorems/combined?
-Right now it's broken down pretty significantly.
-4. Looking at the proof, it does not seem to use any facts about idempotents and
-consequently it's not clear to me that S must be finite for Green's Lemma to hold.
-Is this true?
-5. Would it be more lucid to characterize these theorems in terms of ideals?
--/
+/-! ### Green's Lemma (Proposition 1.5)
+This section demonstrates various results related to Green's theorem. We prove that
+that left/right translations induced by witnesses to two 𝓡/𝓛 related elements are
+bijections between their L/R classes, respectively, that preserve H classes. -/
 
 section Greens_Lemma
 
 variable {S} [Semigroup S] {a b : S}
 
 /-Necessary definitions-- to be moved-/
-def R_translation (a : S) : S → S := (· * a)
+def R_translation (a : S¹) : S¹ → S¹ := (· * a)
 notation:50 "ρᵣ" a => R_translation a
 infixr:70 " ⋆ρᵣ " => R_translation
 
-def L_translation (a : S) : S → S := (a * ·)
+def L_translation (a : S¹) : S¹ → S¹ := (a * ·)
 notation:50 "ρₗ" a => L_translation a
 infixr:70 " ⋆ρₗ " => L_translation
 
-def R_class_set (x : S) : Set S :=
-  fun a => a 𝓡 x
-def L_class_set (x : S) : Set S :=
-  fun a => a 𝓛 x
+def R_class_set (x : S¹) : Set (S¹) :=
+  {a | a 𝓡 x}
+def L_class_set (x : S¹) : Set (S¹) :=
+  { a | a 𝓛 x}
 
-/-For right translation:-/
-theorem Greens_lemma_R_rel_ab {u v: S} {h: a 𝓡 b} (h1: b = a * ↑u) (h2: a= b * ↑v):
-   Set.BijOn (ρᵣ ↑u) (L_class_set a) (L_class_set b) := by
-   sorry
+/-Helper lemmas: -/
 
-theorem Greens_lemma_R_rel_ba {u v : S} {h: a 𝓡 b} (h2: a= b * ↑v) :
-   Set.BijOn (ρᵣ ↑v) (L_class_set b) (L_class_set a) := by
-   sorry
+/-If a 𝓡 b such that b = a * u and a = b * v, then translation by (u * v) on
+any x such that x𝓛a is the identity. -/
+lemma right_translation_id_ab (u v : S¹) (h : a 𝓡 b) (hu : b = a * u) (hv : a = b * v) :
+    ∀x ∈ (L_class_set ↑a), (v ⋆ρᵣ (u ⋆ρᵣ x)) = x := by
+    intros c hc
+    have hac : ↑a 𝓛 c := by exact L_eqv_symm.mp hc
+    have ht : ∃ x, c = x * a := by
+      refine (L_preorder_iff_monoid c ↑a).mp ?_; exact hac.right
+    obtain ⟨t, ht'⟩ := ht
+    have : (v ⋆ρᵣ ( u ⋆ρᵣ c)) = c := by
+      calc
+      (v ⋆ρᵣ ( u⋆ρᵣ c)) = (v ⋆ρᵣ ( u ⋆ρᵣ c)) := by rfl
+      _ = c * u * v := by unfold R_translation; rfl
+      _ = t * b * v := by simp_rw[ht', hu, mul_assoc]
+      _ = t * a := by rw[hv, mul_assoc]
+      _ = c := by rw[ht']
+    exact this
 
-theorem Greens_lemma_r_trans_preserves_H_ab {u v x y : S} {h: a 𝓡 b}
-   (hx : x ∈ L_class_set a) (hy : y ∈ L_class_set a) (h1: b = a * ↑u) :
-    (↑x 𝓗 ↑y) ↔ (x ⋆ρᵣ u) 𝓗 (y ⋆ρᵣ u) := by
-  sorry
+/-If a 𝓡 b such that b = a * u and a = b * v, then translation by (v * u) on
+any x such that x𝓛b is the identity. -/
+lemma right_translation_id_ba (u v : S¹) (h : a 𝓡 b) (hu : b = a * u) (hv : a = b * v) :
+    ∀x ∈ (L_class_set ↑b), (u ⋆ρᵣ (v ⋆ρᵣ x)) = x := by
+    intros c hc
+    have hac : ↑b 𝓛 c := by exact L_eqv_symm.mp hc
+    have ht : ∃ x, c = x * b := by
+      refine (L_preorder_iff_monoid c ↑b).mp ?_; exact hac.right
+    obtain ⟨t, ht'⟩ := ht
+    have : (u ⋆ρᵣ (v ⋆ρᵣ c)) = c := by
+      calc
+      (u ⋆ρᵣ (v ⋆ρᵣ c)) = (u ⋆ρᵣ (v ⋆ρᵣ c)) := by rfl
+      _ = c * v * u := by unfold R_translation; rfl
+      _ = t * a * u := by simp_rw[ht', hv, mul_assoc]
+      _ = t * b := by rw[hu, mul_assoc]
+      _ = c := by rw[ht']
+    exact this
+/-end of helper lemmas.-/
 
-theorem Greens_lemma_r_trans_preserves_H_ba {u v x y : S} {h: a 𝓡 b}
-   (hx : x ∈ L_class_set a) (hy : y ∈ L_class_set b) (h1: b = a * ↑u) :
-    (↑x 𝓗 ↑y) ↔ (x ⋆ρᵣ v) 𝓗 (y ⋆ρᵣ v) := by
-  sorry
+/-If a 𝓡 b such that b = a * u and a = b * v, then right translation by
+(v * u) from the 𝓛-class of a to the 𝓛-class of b
+and by (u * v) 𝓛-class of b to the 𝓛-class of are inverses.-/
+theorem Greens_lemma_inverse_bijections_r_trans {u v : S¹}
+    (h: a 𝓡 b) (hv : a = b * v) (hu : b = a * u) :
+    Set.InvOn (ρᵣ v) (ρᵣ u) (L_class_set a) (L_class_set b) := by
+    unfold Set.InvOn
+    exact ⟨right_translation_id_ab u v h hu hv, right_translation_id_ba u v h hu hv⟩
 
-theorem Greens_lemma_inverse_bijections_r_trans {u v : S}
-    (h: a 𝓡 b) (h1 : a = b * v) (h2 : b = a * u) :
-    Function.RightInverse (ρᵣ v) (ρᵣ u) ∧
-    Function.LeftInverse (ρᵣ v) (ρᵣ u) :=
-  sorry
+/-If a 𝓡 b such that b = a * u, right translation by u is 𝓛-class of a is a
+bijection on the 𝓛-class of b.-/
+theorem Greens_lemma_R_rel_ab {u : S¹} (h: a 𝓡 b) (hu: b = a * u):
+    (Set.BijOn (ρᵣ u) (L_class_set a) (L_class_set b)) := by
+  have h' := h
+  unfold R_eqv at h; unfold eqv_of_preorder at h
+  obtain ⟨⟨v, hv⟩, _⟩ := h
+  refine Set.BijOn.mk ?_ ?_ ?_
+  · intros x hx
+    have hxa : x 𝓛 a := hx
+    have : x * u 𝓛 a * u := ⟨L_preorder_rmult_compat hxa.left u,
+      L_preorder_rmult_compat hxa.right u⟩
+    rw [←hu] at this
+    exact this
+  · intro x hx y hy hxy
+    have hinv : ∀x ∈ (L_class_set ↑a), (v ⋆ρᵣ (u ⋆ρᵣ x)) = x
+      := by exact fun x a_1 ↦ right_translation_id_ab u v h' hu hv x a_1
+    have hinvx := hinv x hx; have hinvy := hinv y hy
+    rw[<-hinvx, <-hinvy, hxy]
+  · intros y hy
+    refine (Set.mem_image (ρᵣ u) (L_class_set ↑a) y).mpr ?_
+    let x := y * v
+    have hx : x ∈ L_class_set a := by
+      have hyb : y 𝓛 b := hy
+      have h1 : x 𝓛 b * v := ⟨L_preorder_rmult_compat hyb.left v,
+                                L_preorder_rmult_compat hyb.right v⟩
+      rw [←hv] at h1; exact h1
+    use x, hx
+    have hinv : ∀y ∈ (L_class_set ↑b), (u ⋆ρᵣ (v ⋆ρᵣ y)) = y
+     := by exact fun y a_1 ↦ right_translation_id_ba u v h' hu hv y a_1
+    have hinvx := hinv y hy; unfold R_translation at hinvx
+    calc
+       x * u = y * v * u := rfl
+       _ = y := by rw[hinvx]
 
-/-For left translation:-/
-theorem Greens_lemma_L_rel_ab {u v: S} {h: a 𝓛 b} (h1: b = ↑u * a) (h2: a= b * ↑v):
-   Set.BijOn (ρᵣ ↑u) (R_class_set a) (R_class_set b) := by
-   sorry
-
-theorem Greens_lemma_L_rel_ba {u v : S} {h: a 𝓛  b} (h2: a= b * ↑v) :
-   Set.BijOn (ρᵣ ↑v) (L_class_set b) (L_class_set a) := by
-   sorry
-
-theorem Greens_lemma_l_trans_preserves_H_ab {u v x y : S} {h: a 𝓛 b}
-   (hx : x ∈ R_class_set a) (hy : y ∈ R_class_set a) (h1: b = ↑u * a) (h2: a= b * ↑v):
-    (↑x 𝓗 ↑y) ↔ (u ⋆ρₗ x) 𝓗 (u ⋆ρₗ y) := by
-  sorry
-
-theorem Greens_lemma_l_trans_preserves_H_ba {u v x y : S} {h: a 𝓛 b}
-   (hx : x ∈ R_class_set a) (hy : y ∈ R_class_set b) (h1: b = ↑u * a) (h2: a= b * ↑v):
-    (↑x 𝓗 ↑y) ↔ (v ⋆ρₗ x) 𝓗 (v ⋆ρₗ y) := by
-  sorry
-
-theorem Greens_lemma_inverse_bijections_l_trans {u v : S}
-    (h: a 𝓡 b) (h1: b = ↑u * a) (h2: a= b * ↑v) :
-    Function.RightInverse (ρₗ v) (ρₗ u) ∧
-    Function.LeftInverse (ρₗ v) (ρₗ u) := by
-  sorry
-
-end Greens_Lemma
+/- If a 𝓡 b such that b = a * u, right translation by u preserves 𝓗-classes.-/
+theorem Greens_lemma_r_trans_preserves_H_ab {x y u v: S¹} (h: a 𝓡 b) (h1: b = a * u)
+    (h2: a = b * v)
+    (hx : x ∈ L_class_set ↑a) (hy : y ∈ L_class_set ↑a):
+    (x 𝓗 y) ↔ (u ⋆ρᵣ x) 𝓗 (u ⋆ρᵣ y) := by
+  constructor
+  · intro hxy
+    refine (H_eqv_iff_L_and_R (x * u) (y * u)).mpr ?_
+    have : x 𝓡 y ∧ x 𝓛 y := by simp[H_eqv_iff_L_and_R x y] at hxy; exact hxy
+    obtain ⟨hxyr, hxyl⟩ := this
+    constructor
+    · have hxyr' := hxyr
+      unfold R_eqv at hxyr ⊢
+      obtain ⟨⟨r1, hr1⟩, ⟨r2, hr2⟩⟩ := hxyr
+      have hu : ∀x, (x ∈ (L_class_set ↑a)) → x 𝓡 x * u := by
+        unfold R_eqv; unfold eqv_of_preorder
+        simp_rw[R_preorder_iff_without_one]
+        have hinv : ∀x ∈ (L_class_set ↑a), (v ⋆ρᵣ (u ⋆ρᵣ x)) = x
+          := by exact fun x a_1 ↦ right_translation_id_ab u v h h1 h2 x a_1
+        intros x hx
+        have hinvx := hinv x hx; unfold R_translation at hinvx
+        constructor
+        · refine Or.symm (Or.intro_left (x = x * u) ?_); use v; exact hinvx.symm
+        · refine Or.symm (Or.intro_left (x * u = x) ?_); use u
+      have hxu := hu x hx
+      have hyu := hu y hy
+      constructor
+      · have : x * u ≤𝓡 y := by
+          refine R_preorder_trans (x * u) x y ?_ ?_
+          exact hxu.right; exact hxyr'.left
+        have : x * u ≤𝓡 y * u := by
+          refine R_preorder_trans (x * u) y (y * u) ?_ ?_
+          exact this; exact hyu.left
+        exact this
+      · have : y * u ≤𝓡 x := by
+          refine R_preorder_trans (y * u) y x ?_ ?_
+          exact hyu.right; exact hxyr'.right
+        have :  y * u ≤𝓡 x * u := by
+          refine R_preorder_trans (y * u) x (x * u) ?_ ?_
+          exact this; exact hxu.left
+        exact this
+    · exact L_eqv_rmult_compat hxyl u
+  · intro hxyu; unfold R_translation at hxyu
+    have hv : ∀x, (x ∈ (L_class_set ↑b)) → x 𝓡 x * v := by
+      unfold R_eqv; unfold eqv_of_preorder
+      simp_rw[R_preorder_iff_without_one]
+      have hinv : ∀x ∈ (L_class_set ↑b), (u ⋆ρᵣ (v ⋆ρᵣ x)) = x
+        := by exact fun x a_1 ↦ right_translation_id_ba u v h h1 h2 x a_1
+      intros x hx
+      have hinvx := hinv x hx; unfold R_translation at hinvx
+      constructor
+      · refine Or.symm (Or.intro_left (x = x * v) ?_); use u; exact hinvx.symm
+      · refine Or.symm (Or.intro_left (x * v = x) ?_); use v
+    have hxu :(x * u) ∈ L_class_set ↑b := by
+      have hxa : x 𝓛 a := hx
+      have := L_eqv_rmult_compat hxa u
+      rw[<-h1] at this; exact this
+    have hyu :(y * u) ∈ L_class_set ↑b := by
+      have hya : y 𝓛 a := hy
+      have := L_eqv_rmult_compat hya u
+      rw[<-h1] at this; exact this
+    have hxv := hv (x * u) (hxu : (x * u) ∈ L_class_set ↑b)
+    have hxy := hv (y * u) (hyu : (y * u) ∈ L_class_set ↑b)
+    have x_eq : (x * u) * v = x := right_translation_id_ab u v h h1 h2 x hx
+    have y_eq : (y * u) * v = y := right_translation_id_ab u v h h1 h2 y hy
+    have hloopr : x * u * v 𝓡 y * u * v := by
+      constructor
+      · have h1: x * u * v ≤𝓡 x * u := by
+          simp_rw[R_preorder_iff_without_one]
+          refine Or.symm (Or.intro_left (x * u * v = x * u) ?_); use v
+        have h2: x * u ≤𝓡 y * u:= hxyu.left.left
+        have h3: y * u ≤𝓡 y * u * v := by
+          simp_rw[R_preorder_iff_without_one]
+          rw[y_eq]
+          refine Or.symm (Or.intro_left (y * u = y) ?_); use u
+        have : x * u * v ≤𝓡 y * u := by
+          refine R_preorder_trans (x * u * v) (x * u) (y * u) ?_ ?_
+          exact h1; exact h2
+        refine R_preorder_trans (x * u * v) (y * u) (y * u * v) ?_ ?_
+        exact this; exact h3
+      · have h1: y * u * v ≤𝓡 y * u := by
+          simp_rw[R_preorder_iff_without_one]
+          refine Or.symm (Or.intro_left (y * u * v = y * u) ?_); use v
+        have h2: y * u ≤𝓡 x * u:= hxyu.right.left
+        have h3: x * u ≤𝓡 x * u * v := by
+          simp_rw[R_preorder_iff_without_one]
+          rw[x_eq]
+          refine Or.symm (Or.intro_left (x * u = x) ?_); use u
+        have : y * u * v ≤𝓡 x * u := by
+          refine R_preorder_trans (y * u * v) (y * u) (x * u) ?_ ?_
+          exact h1; exact h2
+        refine R_preorder_trans (y * u * v) (x * u) (x * u * v) ?_ ?_
+        exact this; exact h3
+    rw[x_eq, y_eq] at hloopr
+    have hloopl : x * u * v 𝓛 y * u * v := ⟨L_preorder_rmult_compat hxyu.left.right v,
+      L_preorder_rmult_compat hxyu.right.right v⟩
+    rw[x_eq, y_eq] at hloopl
+    have:= H_eqv_iff_L_and_R x y
+    exact (H_eqv_iff_L_and_R x y).mpr ⟨hloopr, hloopl⟩
