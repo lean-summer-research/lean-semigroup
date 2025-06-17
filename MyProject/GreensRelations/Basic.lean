@@ -508,5 +508,115 @@ theorem Greens_lemma_l_trans_preserves_H_alt {x y u v: S} (h: a 𝓛 b) (h1: b =
   simp[H_eqv_op_iff x y, L_translation, H_eqv_op_iff (u * x) (u * y)]
   exact this
 
-theorem RL_intersection_contains_ab : a * b ∈ (R_class_set a) ∩ (L_class_set b) ↔
-    ∃ e : S, e ∈ (R_class_set b) ∩ (L_class_set a) ∧ IsIdempotentElem (e) := by sorry
+
+theorem RL_intersection_contains_ab :
+  a * b ∈ (R_class_set a) ∩ (L_class_set b) ↔
+    ∃ e : S, e ∈ (R_class_set b) ∩ (L_class_set a) ∧ IsIdempotentElem e := by
+  constructor
+  · intro hab
+    simp only [Set.mem_inter_iff, R_class_set, L_class_set] at hab
+    obtain ⟨hR, hL⟩ := hab
+    have hRaab : a 𝓡 a * b := by
+      simp[R_eqv] at hR
+      exact ⟨hR, by unfold R_preorder; use b; simp⟩
+    simp[R_eqv, R_preorder_iff_without_one] at hR
+    cases' hR with heq hneq
+    · have L_eq' : L_class_set a = L_class_set b := by
+        apply Set.ext
+        intro x; apply Iff.intro
+        · intro hxa
+          obtain ⟨⟨u, hu⟩, ⟨v, hv⟩⟩ := hxa
+          have haLb : a 𝓛 b := by rw [←heq] at hL; exact hL
+          obtain ⟨⟨s, hs⟩, ⟨t, ht⟩⟩ := haLb
+          have h₁ : ∃ m, (↑x : S¹) = ↑m * ↑b := ⟨u * s, by rw [hu, mul_assoc, <-hs]⟩
+          have h₂ : ∃ n, (↑b : S¹) = n * x := ⟨t * v, by rw [ht, mul_assoc, <-hv]⟩
+          exact ⟨h₁, h₂⟩
+        · intro hxb
+          obtain ⟨⟨u, hu⟩, ⟨v, hv⟩⟩ := hxb
+          have haLb : a 𝓛 b := by rw [←heq] at hL; exact hL
+          obtain ⟨⟨s, hs⟩, ⟨t, ht⟩⟩ := haLb
+          have h1 : ∃ m, (↑x : S¹) = m * a := ⟨u * t, by rw [hu, ht, ←Semigroup.mul_assoc]⟩
+          have h2 : ∃ n, (↑a : S¹) = n * x := ⟨s * v, by rw [hs, hv, ←Semigroup.mul_assoc]⟩
+          exact ⟨h1, h2⟩
+      have hbLa : b ∈ L_class_set a := by
+        rw [L_eq']; simp [L_class_set]
+      cases' hbLa with hu hv
+      rw[L_preorder_iff_without_one] at hu hv
+      cases' hu with hequ hnequ
+      · cases' hv with heqv hneqv
+        · rw[heqv] at heq
+          have heR : b ∈ R_class_set b := by
+            simp [R_class_set, R_preorder_iff_without_one]
+          have heL' : b ∈ L_class_set a := by
+            simp[L_class_set, L_preorder_iff_without_one]; simp[heqv]
+          exact ⟨b, ⟨heR, heL'⟩, heq.symm⟩
+        · rw[<-hequ] at heq
+          have heR : b ∈ R_class_set b := by
+            simp [R_class_set, R_preorder_iff_without_one]
+          have heL' : b ∈ L_class_set a := by
+            simp[L_class_set, L_preorder_iff_without_one]; simp[hequ]
+          exact ⟨b, ⟨heR, heL'⟩, heq.symm⟩
+      · cases' hv with heqv hneqv
+        · rw[heqv] at heq
+          have heR : b ∈ R_class_set b := by
+            simp [R_class_set, R_preorder_iff_without_one]
+          have heL' : b ∈ L_class_set a := by
+            simp[L_class_set, L_preorder_iff_without_one]; simp[heqv]
+          exact ⟨b, ⟨heR, heL'⟩, heq.symm⟩
+        · rcases hnequ with ⟨s, hs⟩
+          have heL : b ∈ L_class_set a := by
+            simp [L_class_set]; constructor;
+            · simp[hs]
+            · unfold L_preorder; use a; exact congr_arg WithOne.coe heq
+          have heR : b ∈ R_class_set b := by
+            simp [R_class_set, R_preorder_iff_without_one] -- b = t * a
+          have bb_eq : b * b = b := by
+            calc
+            b * b = (s * a) * b := by rw [hs]
+            _     = s * (a * b) := by rw[mul_assoc]
+            _    = s * a        := by rw [<-heq]
+            _     = b           := by rw [hs]
+          exact ⟨b, ⟨heR, heL⟩, bb_eq⟩
+    · rcases hneq with ⟨v, hv⟩
+      have bij := Greens_lemma_R_rel_bij hRaab rfl hv
+      simp[L_class_set, L_preorder_iff_without_one] at hL
+      rcases hL with ⟨⟨u1, hu1⟩, ⟨v1, hv1⟩⟩
+      have hb_in_Lab : b ∈ L_class_set (a * b) := by
+        simp [L_class_set, L_preorder_iff_without_one]
+        constructor; use v1; use a; simp[WithOne.coe_mul]
+      rcases Set.BijOn.surjOn bij hb_in_Lab with ⟨e, heL, he_mul⟩
+      unfold R_translation at he_mul
+      have heb : e 𝓡 b := by sorry
+      have heR : e ∈ R_class_set b := by
+        simp [R_class_set, R_preorder_iff_without_one]; constructor;
+        · exact heb.left
+        · use b; exact congr_arg WithOne.coe he_mul.symm
+      have hidem : IsIdempotentElem e := by
+        unfold IsIdempotentElem;
+        have := heb.left; simp[R_preorder_iff_without_one] at this;
+        cases' this with heqs hneqs
+        · rw[<-heqs] at he_mul; exact he_mul
+        · obtain ⟨s, hs⟩ := hneqs
+          calc
+            e * e = e * (b * s) := by rw[hs]
+            _     = (e * b) * s := by rw[mul_assoc]
+            _     = b * s       := by simp[he_mul]
+            _     = e         := by rw[hs]
+      exact ⟨e, ⟨heR, heL⟩, hidem⟩
+  · intro ⟨e, he, heq⟩
+    simp only [Set.mem_inter_iff, R_class_set, L_class_set] at he
+    have : e 𝓛 a := he.right
+    have haleq : a ≤𝓛 e := by simp[this.symm]
+    have : e 𝓡 b := he.left
+    have hbleq : b ≤𝓡 e := by simp[this.symm]
+    have hea : a * e = a := ((le_L_idempotent a e heq).mp haleq).symm
+    have heb : e * b = b := ((le_R_idempotent b e heq).mp hbleq).symm
+    have hR : a 𝓡 (a * b) := by
+      have : (a * e) 𝓡 (a * b) := by exact R_eqv_lmult_compat this a
+      rw [hea] at this; exact this
+    have hL : b 𝓛 (a * b) := by
+      have : (e * b) 𝓛 (a * b) := by (expose_names; exact L_eqv_rmult_compat this_1 b)
+      rw [heb] at this; exact this
+    have hR' : a * b ∈ R_class_set a := by unfold R_class_set; exact hR.symm
+    have hL' : a * b ∈ L_class_set b := by unfold L_class_set; exact hL.symm
+    exact ⟨hR', hL'⟩
