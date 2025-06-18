@@ -45,18 +45,18 @@ lemma L_preorder_iff_R_preorder_op (a b : S) :
   constructor
   · intro hu
     cases' hu with hp hq
-    · exact Or.symm (Or.inr (congrArg op (hp)))
+    · exact Or.symm (Or.inr (congr_arg op (hp)))
     . obtain ⟨x, hx⟩ := hq
       refine Or.symm (Or.intro_left (op a = op b) ?_)
       use op x
-      exact congrArg op hx
+      exact congr_arg op hx
   · intro hv
     cases' hv with hp hq
-    · exact Or.symm (Or.inr (congrArg unop (hp)))
+    · exact Or.symm (Or.inr (congr_arg unop (hp)))
     · obtain ⟨x, hx⟩ := hq
       refine Or.symm (Or.intro_left (a = b) ?_)
       use unop x
-      exact congrArg unop hx
+      exact congr_arg unop hx
 
 lemma L_preorder_op_iff_R_preorder (a b : S) :
     (op a) ≤𝓛 (op b) ↔ (a) ≤𝓡 (b) := by
@@ -64,18 +64,18 @@ lemma L_preorder_op_iff_R_preorder (a b : S) :
   constructor
   · intro hu
     cases' hu with hp hq
-    · exact Or.symm (Or.inr (congrArg unop (hp)))
+    · exact Or.symm (Or.inr (congr_arg unop (hp)))
     . obtain ⟨x, hx⟩ := hq
       refine Or.symm (Or.intro_left (a = b) ?_)
       use unop x
-      exact congrArg unop hx
+      exact congr_arg unop hx
   · intro hv
     cases' hv with hp hq
-    · exact Or.symm (Or.inr (congrArg op (hp)))
+    · exact Or.symm (Or.inr (congr_arg op (hp)))
     · obtain ⟨x, hx⟩ := hq
       refine Or.symm (Or.intro_left (op a = op b) ?_)
       use op x
-      exact congrArg op hx
+      exact congr_arg op hx
 
 lemma L_eqv_iff_R_eqv_op (a b : S) :
     a 𝓛 b ↔ op a 𝓡 op b := by
@@ -86,6 +86,34 @@ lemma L_eqv_op_iff_R_eqv (a b : S) :
     (op a) 𝓛 (op b) ↔ a 𝓡 b := by
   unfold L_eqv R_eqv
   simp[L_preorder_op_iff_R_preorder a b, L_preorder_op_iff_R_preorder b a]
+
+lemma Class_op_RL (x : S): x ∈ R_class_set a  ↔ op x ∈ L_class_set (op a) := by
+  unfold R_class_set L_class_set
+  simp only [Set.mem_setOf_eq]
+  apply Iff.intro
+  · intro h
+    simp[L_eqv_op_iff_R_eqv]; exact h
+  · intro h
+    simp[<-L_eqv_op_iff_R_eqv]; exact h
+
+lemma Class_op_LR (x : S): op x ∈ R_class_set (op a)  ↔ x ∈ L_class_set a := by
+  unfold R_class_set L_class_set
+  simp only [Set.mem_setOf_eq]
+  apply Iff.intro
+  · intro h
+    simp[L_eqv_iff_R_eqv_op]; exact h
+  · intro h
+    simp[<-L_eqv_iff_R_eqv_op]; exact h
+
+lemma H_eqv_op_iff (x y : S) : (x 𝓗 y) ↔ (op x 𝓗 op y) := by
+  rw [H_eqv_iff_L_and_R, H_eqv_iff_L_and_R]
+  constructor
+  · rintro ⟨hL, hR⟩
+    exact ⟨by simp[L_eqv_iff_R_eqv_op] at hR; exact hR,
+           by simp[<-L_eqv_op_iff_R_eqv] at hL; exact hL⟩
+  · rintro ⟨hL, hR⟩
+    exact ⟨by simp[<-L_eqv_op_iff_R_eqv]; exact hR,
+           by simp[L_eqv_iff_R_eqv_op]; exact hL⟩
 
 
 /--# Example of use

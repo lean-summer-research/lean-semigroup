@@ -507,3 +507,31 @@ instance D_eqv_inst : Equivalence (fun a b : S => a 𝓓 b) where
   trans := D_eqv_trans
 
 end DRelation
+
+
+/-! ### Translations and Set-defined R/L classes
+
+This section defines translation on semigroups and provides a set (not necessarily finite)
+description of R/L classes. These definitions provide foundations for proving Green's Lemma.
+-/
+
+section Translations
+
+variable {S} [Semigroup S] {a b: S}
+
+def R_translation (a : S) : S → S := (· * a)
+def R_translation_op (a : Sᵐᵒᵖ) : Sᵐᵒᵖ → Sᵐᵒᵖ := (· * a)
+notation:50 "ρᵣ" a => R_translation a
+infixr:70 " ⋆ρᵣ " => R_translation
+
+def L_translation (a : S) : S → S := (a * ·)
+def L_translation_op (a : Sᵐᵒᵖ) : Sᵐᵒᵖ → Sᵐᵒᵖ := (a * ·)
+notation:50 "ρₗ" a => L_translation a
+infixr:70 " ⋆ρₗ " => L_translation
+
+def R_class_set (x : S) : Set (S) :=
+  {a | a 𝓡 x}
+def L_class_set (x : S) : Set (S) :=
+  { a | a 𝓛 x}
+
+end Translations
