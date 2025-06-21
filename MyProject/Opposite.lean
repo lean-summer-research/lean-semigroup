@@ -45,16 +45,16 @@ lemma L_preorder_iff_R_preorder_op (a b : S) :
   constructor
   · intro hu
     cases' hu with hp hq
-    · exact Or.symm (Or.inr (congr_arg op (hp)))
+    · exact Or.inl (congr_arg op (hp))
     . obtain ⟨x, hx⟩ := hq
-      refine Or.symm (Or.intro_left (op a = op b) ?_)
+      right
       use op x
       exact congr_arg op hx
   · intro hv
     cases' hv with hp hq
-    · exact Or.symm (Or.inr (congr_arg unop (hp)))
+    · exact Or.inl (congr_arg unop (hp))
     · obtain ⟨x, hx⟩ := hq
-      refine Or.symm (Or.intro_left (a = b) ?_)
+      right
       use unop x
       exact congr_arg unop hx
 
@@ -87,7 +87,7 @@ lemma L_eqv_op_iff_R_eqv (a b : S) :
   unfold L_eqv R_eqv
   simp[L_preorder_op_iff_R_preorder a b, L_preorder_op_iff_R_preorder b a]
 
-lemma Class_op_RL (x : S): x ∈ R_class_set a  ↔ op x ∈ L_class_set (op a) := by
+lemma Class_op_RL (x : S) : x ∈ R_class_set a  ↔ op x ∈ L_class_set (op a) := by
   unfold R_class_set L_class_set
   simp only [Set.mem_setOf_eq]
   apply Iff.intro

@@ -1,28 +1,36 @@
 import MyProject.GreensRelations.Defs
 
-
 /-!
 # Homomorphisms and Isomorphisms of Semigroups
 
-This file introduces homomorphisms and isomorphisms of semigroups, together with associated notations.
-In fact, these notions are already defined in mathlib for arbitrary multiplicative structures, so there is no need to introduce anything new for semigroups, for which the definitions are the same.
+This file introduces homomorphisms and isomorphisms of semigroups, together with associated
+notations. In fact, these notions are already defined in mathlib for arbitrary multiplicative
+structures, so there is no need to introduce anything new for semigroups, for which the definitions
+are the same.
 
-It then proves a number of properties concerning preservation of Green's relations and idempotence under homomorphisms and isomorphisms.
+It then proves a number of properties concerning preservation of Green's relations and idempotence
+under homomorphisms and isomorphisms.
 
 ## Main definitions and notations
 
 **Homomorphisms and Isomorphisms**:
 
-* `S →ₙ* T` (defined in Mathlib.Algebra.Hom.Group) If `S` and `T` are semigroups (or any multiplicative structures) then `MulHom S T` denotes the type of multiplication-preserving maps--that is, homomorphisms--from `S` to `T`. This is also denoted `S →ₙ* T`. (A member of this type is a structure bundling the map and a proof that it is multiplication-preserving, however some typeclass magic tricks allow us to treat it as the map itself.)
+* `S →ₙ* T` (defined in Mathlib.Algebra.Hom.Group) If `S` and `T` are semigroups (or any
+multiplicative structures) then `MulHom S T` denotes the type of multiplication-preserving
+maps--that is, homomorphisms--from `S` to `T`. This is also denoted `S →ₙ* T`. (A member of this
+type is a structure bundling the map and a proof that it is multiplication-preserving, however
+some typeclass magic tricks allow us to treat it as the map itself.)
 
-* (defined in Mathlib.Algebra.Hom.Group) `MulEquiv S T` denotes the type of isomorphisms between `S` and `T`. This is also denoted `S ≃* T`.
+* (defined in Mathlib.Algebra.Hom.Group) `MulEquiv S T` denotes the type of isomorphisms between
+`S` and `T`. This is also denoted `S ≃* T`.
 
 **Stable binary relations**
 
-* `hom_stable` -- A family of binary relations `Rel` on semigroups is hom-stable if for every homomorphism `h` of semigroups, `s Rel s'` implies
-`(h s) Rel (h s')`.
+* `hom_stable` -- A family of binary relations `Rel` on semigroups is hom-stable if for every
+homomorphism `h` of semigroups, `s Rel s'` implies `(h s) Rel (h s')`.
 
-* `iso-stable` -- A family of binary relations `Rel` on semigroups is iso-stable if for every isomorphism `h` of semigroups, `s Rel s'` if and only if ` (h s) Rel (h s')`.
+* `iso-stable` -- A family of binary relations `Rel` on semigroups is iso-stable if for every
+isomorphism `h` of semigroups, `s Rel s'` if and only if ` (h s) Rel (h s')`.
 
 ## Main statements
 
@@ -30,15 +38,17 @@ It then proves a number of properties concerning preservation of Green's relatio
 ## TODO
 
 * Fill in Main statements above!
-* This file contains a separate proof that the inverse of an isomorphism is an isomorphism. But this is also proved in Mathlib.Algebra.Hom.Group, so it would be desirable to apply the version of this statement as alredy given, rather than redoing this from scratch.
+* This file contains a separate proof that the inverse of an isomorphism is an isomorphism. But
+this is also proved in Mathlib.Algebra.Hom.Group, so it would be desirable to apply the version
+of this statement as alredy given, rather than redoing this from scratch.
 -/
 
 /-!
-## Preservations of Green's relations under homomorphisms
+### Preservations of Green's relations under homomorphisms
 
 This section shows that the 𝓡,𝓛,𝓙 orders and equivalences are preserved under homomorphisms.
-
 -/
+
 lemma R_order_preserved (S T: Type)[Semigroup S]
 [Semigroup T](h : S →ₙ* T)(s₁ s₂: S)(ord : s₁ ≤𝓡 s₂) : (h  s₁) ≤𝓡 (h  s₂) := by
   rw [R_preorder_iff_without_one] at *
@@ -93,13 +103,18 @@ lemma J_order_preserved (S T: Type)[Semigroup S]
 
 /-! ## hom-stable relations
 
-This defines what it means for a family of relations on semigroups to be preserved under homomorphisms, and shows that the orders and equivalences in Green's relations are  preserved. The results on the preorders are just restatements of the lemmas in the preceding section, but this is stated in a way that allows us to talk about a family of relations having a given property.
+This defines what it means for a family of relations on semigroups to be preserved under
+homomorphisms, and shows that the orders and equivalences in Green's relations are  preserved.
+The results on the preorders are just restatements of the lemmas in the preceding section, but
+this is stated in a way that allows us to talk about a family of relations having a given property.
 
 We also show preservation under isomorphisms.
 
 -/
 
-def hom_stable (rel :(T : Type)→ [Semigroup T] →  T → T → Prop ) : Prop := ∀ (S₁  S₂ : Type)[Semigroup S₁][Semigroup S₂](h : S₁ →ₙ* S₂)(s s' : S₁), rel S₁ s s' → rel S₂ (h s) (h s')
+def hom_stable (rel :(T : Type)→ [Semigroup T] →  T → T → Prop ) : Prop :=
+  ∀ (S₁  S₂ : Type)[Semigroup S₁][Semigroup S₂](h : S₁ →ₙ* S₂)(s s' : S₁),
+  rel S₁ s s' → rel S₂ (h s) (h s')
 
 /- The lemmas above can be translated by saying that the various relations are hom_stable.  This
 one is for the L-order, but the proofs for the other relations are the same. -/
@@ -154,7 +169,9 @@ lemma J_equiv_hom_stable: hom_stable @J_eqv := by
 
 /-! ## iso-stable relations
 
-This section defines what it means for a family of binary relations on semigroups to be stable under isomorphisms. We prove a very general result that hom-stable relations are iso-stable, and use it to give short proofs that the Green orders and equivalences are all iso-stable.
+This section defines what it means for a family of binary relations on semigroups to be stable
+under isomorphisms. We prove a very general result that hom-stable relations are iso-stable, and
+use it to give short proofs that the Green orders and equivalences are all iso-stable.
 
 -/
 
@@ -176,7 +193,9 @@ instance inviso {S}{T}[Semigroup S][Semigroup T](hs : S ≃* T) : T ≃* S where
 
 /- Definition of an isomorphism-stable family of relations.-/
 
-def iso_stable (rel :(T : Type)→ [Semigroup T] →  T → T → Prop ) : Prop := ∀ (S₁  S₂ : Type)[Semigroup S₁][Semigroup S₂](h : S₁ ≃* S₂)(s s' : S₁), rel S₁ s s' ↔ rel S₂ (h s) (h s')
+def iso_stable (rel :(T : Type)→ [Semigroup T] →  T → T → Prop ) : Prop :=
+  ∀ (S₁  S₂ : Type)[Semigroup S₁][Semigroup S₂](h : S₁ ≃* S₂)(s s' : S₁),
+  rel S₁ s s' ↔ rel S₂ (h s) (h s')
 
 /- A relation that is stable under homomorphisms is stable under isomorphisms.-/
 
@@ -223,7 +242,9 @@ lemma J_equiv_iso_stable :  iso_stable @J_eqv := by
 
 ## Powers and Idempotents
 
-This section shows that powering is preserved under homomorphisms, and that idempotents are preserved under homomorphisms and isomorphisms.  It also shows that in the finite case, every idempotent in the image of a homomorphism has an idempotent preimage. -/
+This section shows that powering is preserved under homomorphisms, and that idempotents are
+preserved under homomorphisms and isomorphisms.  It also shows that in the finite case, every
+idempotent in the image of a homomorphism has an idempotent preimage. -/
 
 /- lemma pow_succ_eq {x : S} (n : ℕ+) (h_idem : IsIdempotentElem x) : x ^ n = x := by
   induction n using PNat.recOn with
