@@ -23,10 +23,12 @@ in finite semigroups.
   of a and b.
 * `Greens_lemma_r_trans_preserves_H`, `Greens_lemma_l_trans_preserves_H`: shows preservation
   of 𝓗-classes for elements in certain 𝓛/𝓡 classes under specific left/right translations
+* `RL_intersection_contains_ab` :  a * b is in the intersection of the 𝓡 of a and 𝓛 class of b,
+  if and only if the intersection of the 𝓡 of b and 𝓛 class of a contans an idempotent.
 
 
 ## TODO
-
+* Fill in sorry in `RL_intersection_contains_ab` proof (and write dual version?)
 -/
 
 /-! ### Simp Lemmas
@@ -508,7 +510,8 @@ theorem Greens_lemma_l_trans_preserves_H_alt {x y u v: S} (h: a 𝓛 b) (h1: b =
   simp[H_eqv_op_iff x y, L_translation, H_eqv_op_iff (u * x) (u * y)]
   exact this
 
-
+/-For a, b in S, (a * b) ∈ R_class_set a ∩ L_class_set b if and only if there is an idempotent
+element in R_class_set b ∩ L_class_set a.-/
 theorem RL_intersection_contains_ab :
   a * b ∈ (R_class_set a) ∩ (L_class_set b) ↔
     ∃ e : S, e ∈ (R_class_set b) ∩ (L_class_set a) ∧ IsIdempotentElem e := by
