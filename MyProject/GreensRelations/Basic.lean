@@ -623,3 +623,156 @@ theorem RL_intersection_contains_ab :
     have hR' : a * b ∈ R_class_set a := by unfold R_class_set; exact hR.symm
     have hL' : a * b ∈ L_class_set b := by unfold L_class_set; exact hL.symm
     exact ⟨hR', hL'⟩
+
+section GroupsInSemigroups
+variable [Semigroup S] {e x a b : S}
+set_option linter.unusedSectionVars false
+
+/-helper lemmas-/
+lemma H_equiv_iff_exists (idem: IsIdempotentElem (e)) (h : x 𝓗 e) :
+  ∃ u v : S, x = e * u ∧ x = v * e := by
+  have h: x 𝓡 e ∧ x 𝓛 e := (H_eqv_iff_L_and_R x e).mp h
+  simp only [Set.mem_inter_iff] at h
+  obtain ⟨hR, hL⟩ := h
+  unfold L_eqv eqv_of_preorder at hL
+  unfold R_eqv eqv_of_preorder at hR
+  simp[R_preorder_iff_without_one] at hR
+  simp[L_preorder_iff_without_one] at hL
+  cases' hR.left with heq hneq
+  · cases' hL.left with heq' hneq'
+    · use e, e; simp [heq];
+      have : e * e = e := idem; exact this.symm
+    · use e, e; simp [heq];
+      have : e * e = e := idem; exact this.symm
+  · cases' hL.left with heq' hneq'
+    · use e, e; simp [heq'];
+      have : e * e = e := idem; exact this.symm
+    · obtain ⟨u, hu⟩ := hneq
+      obtain ⟨v, hv⟩ := hneq'
+      use u, v
+
+lemma idempotent_left_identity (he : IsIdempotentElem e) (ha : a 𝓗 e) :
+  e * a = a := by
+    rcases H_equiv_iff_exists he ha with ⟨u, v, rfl, he'⟩
+    simp [← mul_assoc]
+    have : e * e = e := he
+    simp_rw[this]
+
+lemma idempotent_right_identity (he : IsIdempotentElem e) (ha : a 𝓗 e) :
+  a * e = a := by
+    rcases H_equiv_iff_exists he ha with ⟨u, v, he', rfl⟩
+    simp [mul_assoc]
+    have : e * e = e := he
+    simp_rw[this]
+
+/-- The idempotent e in an 𝓗 class functions as an identity for elements in said class.-/
+lemma idempotent_identity_H_eqv (he : IsIdempotentElem e) (ha : a 𝓗 e) :
+    e * a = a ∧ a * e = a :=
+  ⟨idempotent_left_identity he ha, idempotent_right_identity he ha⟩
+
+/-- An 𝓗 class containing an identity is closed under multiplication-/
+lemma H_mul_closed (he : IsIdempotentElem e)
+    (ha : a 𝓗 e) (hb : b 𝓗 e) :
+    a * b 𝓗 e := by
+  have halr := (H_eqv_iff_L_and_R a e).mp ha
+  have hblr := (H_eqv_iff_L_and_R b e).mp hb
+  simp only [Set.mem_inter_iff] at *
+  obtain ⟨hal, har⟩ := halr
+  obtain ⟨hbl, hbr⟩ := hblr
+  unfold R_eqv eqv_of_preorder at hal hbl
+  unfold L_eqv eqv_of_preorder at har hbr
+  simp[R_preorder_iff_without_one] at hal hbl
+  simp[L_preorder_iff_without_one] at har hbr
+  cases' hal.left with heq halneq
+  · cases' hbl.left with heq' hblneq
+    · rw [heq, heq'] at *
+      have : e * e = e := he
+      simp_rw[this]; apply H_eqv_refl
+    · rw[heq]; obtain ⟨x, rfl⟩ := hblneq
+      rw[<-mul_assoc, he]; exact hb
+  · cases' hbl.left with heq' hblneq
+    · rw[heq']; obtain ⟨x, rfl⟩ := halneq
+      have : (e * x) * e = (e * x) := idempotent_right_identity he ha
+      rw[this]; exact ha
+    · apply (H_eqv_iff_L_and_R (a * b) e).mpr
+      have hee: e ∈ R_class_set b ∩ L_class_set a := by
+        rw [R_class_set, L_class_set]
+        constructor
+        · exact (((H_eqv_iff_L_and_R b e).mp (hb)).left).symm
+        · exact (((H_eqv_iff_L_and_R a e).mp (ha)).right).symm
+      constructor
+      · have hae := ((H_eqv_iff_L_and_R a e).mp ha).left
+        have habl : a * b 𝓡 a * e := by
+          refine R_eqv_lmult_compat ?_ a
+          exact ((H_eqv_iff_L_and_R b e).mp hb).left
+        have : a * e = a := by exact idempotent_right_identity he ha
+        rw[this] at habl
+        unfold R_eqv eqv_of_preorder
+        exact ⟨R_preorder_trans (a * b) a e (habl.left) (hae.left),
+            R_preorder_trans (e) a (a * b) (hae.right) (habl.right)⟩
+      · have hbe := ((H_eqv_iff_L_and_R b e).mp hb).right
+        have habl : a * b 𝓛 e * b := by
+          refine L_eqv_rmult_compat ?_ b
+          exact ((H_eqv_iff_L_and_R a e).mp ha).right
+        have : e * b = b := by exact idempotent_left_identity he hb
+        rw[this] at habl
+        unfold L_eqv eqv_of_preorder
+        exact ⟨L_preorder_trans (a * b) b e (habl.left) (hbe.left),
+            L_preorder_trans (e) b (a * b) (hbe.right) (habl.right)⟩
+
+lemma H_class_has_inverse {S : Type*} [Semigroup S]
+    {e x : S} (he : IsIdempotentElem e) (hx : x 𝓗 e) :
+    ∃ y : S, x * y = e ∧ y * x = e ∧ y 𝓗 e := by
+  rcases H_equiv_iff_exists he hx with ⟨u, v, hu, hv⟩
+  have h1 : x * u * v = e := by
+    rw [hv]
+    simp_rw[mul_assoc v, <-hu]
+    rw [← hu, ← hv] -- back to x
+    -- x * y = x * (u * v) = (x * u) * v = (e * u) * v
+    -- from x = e * u
+    rw [hu]
+    simp_rw [← mul_assoc, he]
+  have h2 : y * x = e := by
+    -- x = e * u, so (u * v) * x = (u * v) * (e * u) = u * (v * e) * u = u * x * u
+    rw [hu]
+    rw [← mul_assoc, ← mul_assoc]
+    rw [hv]
+    simp_rw [← mul_assoc, he]
+  have hy : y 𝓗 e := H_mul_closed he hx hx
+  exact ⟨y, h1, h2, hy⟩
+
+/- end helper lemmas-/
+
+
+instance semigroupOnH {e : S} (he : IsIdempotentElem e) :
+    Semigroup (H_class_set e) where
+  mul := λ (a b : H_class_set e) => ⟨a.val * b.val, (by
+    refine Set.mem_def.mpr ?_
+    apply H_mul_closed he ?_
+    unfold H_class_set at a b
+    · exact b.prop
+    · exact a.prop)⟩
+  mul_assoc := by
+    intros a b c
+    apply Subtype.eq
+    exact mul_assoc a.val b.val c.val
+
+instance monoidOnH {e : S} (he : IsIdempotentElem e) :
+    Monoid (H_class_set e) where
+  toSemigroup := semigroupOnH he
+  one := ⟨e, by simp [H_class_set, Set.mem_setOf_eq, Setoid.refl]⟩
+  one_mul := by
+    intro x
+    apply Subtype.eq
+    exact idempotent_left_identity he x.prop
+  mul_one := by
+    intro x
+    apply Subtype.eq
+    exact idempotent_right_identity he x.prop
+
+instance groupOnH {e : S} (he : IsIdempotentElem e) : Group (H_class_set e) where
+  toMonoid := monoidOnH he
+  inv := λ x => sorry --need to use Green's lemma induced h-class bijection here
+  inv_mul_cancel := sorry
+
+end GroupsInSemigroups
