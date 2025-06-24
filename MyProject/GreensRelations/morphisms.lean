@@ -151,8 +151,6 @@ under isomorphisms. We prove a very general result that hom-stable relations are
 use it to give short proofs that the Green orders and equivalences are all iso-stable.
 -/
 
-
-
 /-- Definition of an isomorphism-stable family of relations on semigroups.-/
 def iso_stable (rel : {T : Type} → [Semigroup T] → T → T → Prop ) : Prop :=
   ∀ (S₁ S₂ : Type) [Semigroup S₁] [Semigroup S₂] (h : S₁ ≃* S₂) (s s' : S₁),
