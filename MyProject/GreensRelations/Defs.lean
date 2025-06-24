@@ -166,7 +166,7 @@ lemma L_eqv_iff (a b : S) : a 𝓛 b ↔ a ≤𝓛 b ∧ b ≤𝓛 a := by unfol
 lemma J_eqv_iff (a b : S) : a 𝓙 b ↔ a ≤𝓙 b ∧ b ≤𝓙 a := by unfold J_eqv; simp
 lemma H_eqv_iff (a b : S) : a 𝓗 b ↔ a ≤𝓗 b ∧ b ≤𝓗 a := by unfold H_eqv; simp
 
-variable {a b : S}
+variable {a b c : S}
 
 /-! Reflexivity Lemmas -/
 @[simp] lemma R_eqv_refl : a 𝓡 a := by constructor <;> simp
@@ -183,6 +183,16 @@ lemma J_eqv_symm : a 𝓙 b ↔ b 𝓙 a := by
   constructor <;> (intros h; apply eqv_of_preorder_symm; simp_all [J_eqv_iff])
 lemma H_eqv_symm : a 𝓗 b ↔ b 𝓗 a := by
   constructor <;> (intros h; apply eqv_of_preorder_symm; simp_all [H_eqv_iff])
+
+/-! Transitivity Lemmas-/
+lemma R_eqv_trans (hab : a 𝓡 b) (hbc : b 𝓡 c) : a 𝓡 c := by
+  apply @eqv_of_preorder_trans S R_preorder _ a b c <;> assumption
+lemma L_eqv_trans (hab : a 𝓛 b) (hbc : b 𝓛 c) : a 𝓛 c := by
+  apply @eqv_of_preorder_trans S L_preorder _ a b c <;> assumption
+lemma J_eqv_trans (hab : a 𝓙 b) (hbc : b 𝓙 c) : a 𝓙 c := by
+  apply @eqv_of_preorder_trans S J_preorder _ a b c <;> assumption
+lemma H_eqv_trans (hab : a 𝓗 b) (hbc : b 𝓗 c) : a 𝓗 c := by
+  apply @eqv_of_preorder_trans S H_preorder _ a b c <;> assumption
 end CoreDefinitions
 
 /-! ### Alternative characterizations of 𝓗 -/
