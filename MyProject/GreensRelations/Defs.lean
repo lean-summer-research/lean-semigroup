@@ -537,5 +537,5 @@ def J_class_set (x : S) : Set (S) :=
   { a | a 𝓙 x}
 def H_class_set (x : S) : Set (S) :=
   { a | a 𝓗 x}
-end Translations
 
+end Translations
