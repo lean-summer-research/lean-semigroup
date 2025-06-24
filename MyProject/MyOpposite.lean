@@ -1,42 +1,35 @@
 import MyProject.GreensRelations.morphisms
 
-
-set_option linter.unusedSectionVars false
-
-
-
-
 open MulOpposite
+
 /- (the built-in notation for MulOpposite S is Sᵐᵒᵖ)-/
 
-
-/- ## Basic properties of the reversed semigroup
-
--/
+/- ### Basic properties of the reversed semigroup -/
 
 /- Reversal of multiplication.  Where in the definition of
 MulOpposite does this occur?  Yet it's there... somehow.-/
 
+section Basic_Properties
 
-@[simp]
-lemma mul_reverse {S : Type}[Semigroup S](s t : S):
-op (s * t) = op t * op s := rfl
+variable {S : Type} [Semigroup S]
+
+@[simp] lemma mul_reverse (s t : S) : op (s * t) = op t * op s := rfl
 
 
 /- The reversed semigroup of a finite semigroup is finite. Must be very simple, but how do I prove it?-/
-instance reverse_finite {S : Type} [Semigroup S][Finite S] : Finite Sᵐᵒᵖ :=
-sorry
+instance reverse_finite [Finite S] : Finite Sᵐᵒᵖ := by
+  sorry
 
 /- op preserves idempotents in a weak sense; see below for
 the 'strong' sense-/
 
 @[simp]
-lemma op_idem' {S : Type}[Semigroup S](e : S)(idem : IsIdempotentElem e ): IsIdempotentElem (op e ) := by
+lemma op_idem' (e : S) (idem : IsIdempotentElem e) : IsIdempotentElem (op e) := by
   unfold IsIdempotentElem at *
-  rw [<-mul_reverse,idem]
+  rw [← mul_reverse, idem]
 
 /- op∘op is an isomorphism-/
-def op_op_isom {S : Type}[Semigroup S]  : S ≃* (Sᵐᵒᵖ)ᵐᵒᵖ where
+def op_op_isom : S ≃* (Sᵐᵒᵖ)ᵐᵒᵖ where
   toFun := op ∘ op
   invFun := unop ∘ unop
   left_inv := by
@@ -54,94 +47,83 @@ def op_op_isom {S : Type}[Semigroup S]  : S ≃* (Sᵐᵒᵖ)ᵐᵒᵖ where
 
 /- op preserves idempotents in the strong sense  -/
 @[simp]
-lemma op_idem  {S : Type}[Semigroup S](e : S): IsIdempotentElem e ↔  IsIdempotentElem (op e ) := by
+lemma op_idem (e : S): IsIdempotentElem e ↔ IsIdempotentElem (op e) := by
   constructor
   · intro idem
     apply op_idem' e idem
   · intro idem
     apply op_idem' (op e) at idem
-    exact (idempotent_iso_preserved   op_op_isom  e).mpr idem
+    rw [idempotent_iso_preserved (@op_op_isom S _) e]
+    assumption
 
+end Basic_Properties
 
 /-! ## Duality of 𝓡 and 𝓛 orders
 
-These two lemmas say that the 𝓡 order in a semigroup is the same as the 𝓛 order in the reversed semigroup, and vice-versa. We use the results above about isomorphisms to derive the second result in a very direct manner from the first.
-
+These two lemmas say that the 𝓡 order in a semigroup is the same as the 𝓛 order in the reversed
+semigroup, and vice-versa. We use the results above about isomorphisms to derive the second result
+in a very direct manner from the first.
 -/
-lemma op_op_L {S : Type} [Semigroup S](a b : S) :
-a ≤𝓛 b ↔ op (op a) ≤𝓛 op (op b) := L_order_iso_stable S (Sᵐᵒᵖ)ᵐᵒᵖ (op_op_isom ) a b
 
+section Duality
 
-lemma op_op_R {S : Type} [Semigroup S](a b : S) :
-a ≤𝓡 b ↔ op (op a) ≤𝓡 op (op b) := R_order_iso_stable S (Sᵐᵒᵖ)ᵐᵒᵖ (op_op_isom) a b
+variable {S : Type} [Semigroup S] (a b : S)
 
-lemma L_preorder_iff_R_preorder_op {S : Type}
- [Semigroup S](a b : S) :
-    a ≤𝓛 b ↔ (op a) ≤𝓡 (op b) := by
-  rw[R_preorder_iff_without_one, L_preorder_iff_without_one]
+lemma op_op_L : a ≤𝓛 b ↔ op (op a) ≤𝓛 op (op b) := L_order_iso_stable S (Sᵐᵒᵖ)ᵐᵒᵖ op_op_isom a b
+
+lemma op_op_R : a ≤𝓡 b ↔ op (op a) ≤𝓡 op (op b) := R_order_iso_stable S (Sᵐᵒᵖ)ᵐᵒᵖ (op_op_isom) a b
+
+lemma L_preorder_iff_R_preorder_op : a ≤𝓛 b ↔ (op a) ≤𝓡 (op b) := by
+  rw [R_preorder_iff_without_one, L_preorder_iff_without_one]
   constructor
-  · intro hu
-    cases' hu with hp hq
-    · exact Or.symm (Or.inr (congrArg op (hp)))
-    . obtain ⟨x, hx⟩ := hq
-      refine Or.symm (Or.intro_left (op a = op b) ?_)
-      use op x
-      exact congrArg op hx
-  · intro hv
-    cases' hv with hp hq
-    · exact Or.symm (Or.inr (congrArg unop (hp)))
-    · obtain ⟨x, hx⟩ := hq
-      refine Or.symm (Or.intro_left (a = b) ?_)
-      use unop x
-      exact congrArg unop hx
+  · rintro (heq | ⟨x, hx⟩)
+    · left; congr
+    · right; use op x; congr
+  · rintro (heq | ⟨x, hx⟩)
+    · left; rwa [← op_inj]
+    · right; use unop x; rw [← op_inj, hx, mul_reverse, op_unop]
 
-lemma R_preorder_iff_L_preorder_op {S : Type }
-[Semigroup S] (a b : S) :
-    a ≤𝓡 b ↔ (op a) ≤𝓛 (op b) := by
-  simp  [op_op_R a b]
-  simp [(L_preorder_iff_R_preorder_op (op a) (op b)) ]
+lemma R_preorder_iff_L_preorder_op : a ≤𝓡 b ↔ (op a) ≤𝓛 (op b) := by
+  simp [op_op_R a b]
+  simp [(L_preorder_iff_R_preorder_op (op a) (op b))]
 
-lemma L_equiv_iff_R_equiv_op {S : Type}
- [Semigroup S](a b : S) :
-    a 𝓛 b ↔ (op a) 𝓡 (op b) := by
-    simp [R_eqv, L_eqv]
-    simp [L_preorder_iff_R_preorder_op]
+lemma L_equiv_iff_R_equiv_op : a 𝓛 b ↔ (op a) 𝓡 (op b) := by
+  simp [R_eqv, L_eqv]
+  simp [L_preorder_iff_R_preorder_op]
 
-lemma R_equiv_iff_L_equiv_op {S : Type}
- [Semigroup S](a b : S) :
-    a 𝓡 b ↔ (op a) 𝓛 (op b) := by
-    simp [R_eqv, L_eqv]
-    simp [R_preorder_iff_L_preorder_op]
+lemma R_equiv_iff_L_equiv_op :a 𝓡 b ↔ (op a) 𝓛 (op b) := by
+  simp [R_eqv, L_eqv]
+  simp [R_preorder_iff_L_preorder_op]
+
+end Duality
+
+section Example
+
+variable {S : Type} [Semigroup S] (a e : S)
 
 /- Example of use : Here is a re-proof of
-a theorem from Basics.  We will then apply it along with the duality principles established above to obtain a brief proof of the dual version.-/
+a theorem from Basics.  We will then apply it along with the duality principles established
+above to obtain a brief proof of the dual version.-/
 
-theorem le_R_idempotent_rehash (S : Type)[Semigroup S](a e : S)(h: IsIdempotentElem e) : (a ≤𝓡 e) ↔ (a = e * a) := by
+theorem le_R_idempotent_rehash (h : IsIdempotentElem e) : (a ≤𝓡 e) ↔ (a = e * a) := by
   rw [R_preorder_iff_without_one]
   constructor
   ·intro h
    cases' h with eq neq
-   · rw [eq,h]
+   · rw [eq, h]
    · cases' neq with x h'
      have k : e * a = a := by
-      rw [h',<-mul_assoc,h]
+      rw [h',<-mul_assoc, h]
      exact Eq.symm k
   · intro aea
     have k' : ∃ x, a = e * x := by use a
     exact Or.intro_right _ k'
 variable (S : Type)[Semigroup S]
 
-
-theorem le_L_idempotent_rehash (S : Type)[Semigroup S](a e : S)(h: IsIdempotentElem e) : (a ≤𝓛 e) ↔ (a = a * e) := by
- simp [L_preorder_iff_R_preorder_op]
- rw [le_R_idempotent_rehash, <-mul_reverse a e]
- exact op_inj;exact op_idem' e h
-
-
-
-
-
-
+theorem le_L_idempotent_rehash (h: IsIdempotentElem e) : (a ≤𝓛 e) ↔ (a = a * e) := by
+  simp [L_preorder_iff_R_preorder_op]
+  rw [le_R_idempotent_rehash, ← mul_reverse a e]
+  exact op_inj; exact op_idem' e h
 
 /- Stuff that was not used in the code above.
 /- # Definitions and Instances related to S¹-compatibility with MulOpposite-/
@@ -161,7 +143,7 @@ f (t * t') = (f t') * (f t)
 
 /- if you compose two antihomomorphisms you get a homomorphism-/
 
-lemma anti_anti {T₁ T₂ T₃: Type} [Semigroup T₁][Semigmap_mroup T₂][Semigroup T₃](f : T₁ → T₂)(g : T₂ → T₃)(isantif : is_antihomomorphism f)(isantig : is_antihomomorphism g)(t t': T₁) : f ( g (t * t')) = f (g t) * f (g t') := sorry
+lemma anti_anti {T₁ T₂ T₃: Type} [Semigroup T₁][Semigroup T₂][Semigroup T₃](f : T₁ → T₂)(g : T₂ → T₃)(isantif : is_antihomomorphism f)(isantig : is_antihomomorphism g)(t t': T₁) : f ( g (t * t')) = f (g t) * f (g t') := sorry
 
 lemma op_op (s : S) : unop (unop (op (op s))) = s := by
   have h₁: unop (op (op s)) = op s := rfl
