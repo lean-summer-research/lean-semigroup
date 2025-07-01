@@ -147,22 +147,5 @@ theorem left_translation_preserves_H (ha : a = u * b) (hb : b = v * a)
   rw [eq_mul_iff_op, R_class_iff_op, H_eqv_iff_op, H_eqv_iff_op (v * x), op_mul, op_mul] at *
   apply right_translation_preserves_H ha hb hx hy
 
--- Condenced version. TODO: remove this lemma?
-theorem greens_lemma (hR : a 𝓡 b) : a = b ∨ ∃ u v,
-    (a = b * u ∧
-    b = a * v ∧
-    Set.BijOn (ρᵣ v) (L_class_set a) (L_class_set b) ∧
-    Set.InvOn (ρᵣ u) (ρᵣ v) (L_class_set a) (L_class_set b) ∧
-    (∀ x y : S, (x ∈ L_class_set a) → (y ∈ L_class_set a) →
-    ((x 𝓗 y) ↔ (ρᵣ v) x 𝓗 (ρᵣ v) y))) := by
-  rw [R_eqv_iff_without_one] at hR
-  rcases hR with (trivial | hR)
-  left; assumption; right -- trivial case where a = b
-  rcases hR with ⟨u, v, hu, hv⟩
-  have bij := right_translation_bijection hu hv
-  have inv := right_translations_inverse hu hv
-  use u, v
-  refine ⟨hu, hv, bij, inv,
-    fun x y hx hy => right_translation_preserves_H hu hv hx hy⟩
 
 end Greens_Lemma
