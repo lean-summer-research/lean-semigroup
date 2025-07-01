@@ -1,4 +1,4 @@
-import MyProject.GreensRelations.Defs
+import MyProject.GreensRelations.D_Rel
 
 /-!
 # Homomorphisms and Isomorphisms of Semigroups
@@ -34,10 +34,13 @@ isomorphism `h` of semigroups, `s Rel s'` if and only if ` (h s) Rel (h s')`.
 
 ## Main statements
 
+* We prove that Green's orders and equivalences are hom-stable and iso-stable.
+
+* `idempotent_preimage` -- In finite semigroups, if `h : S →ₙ* T` and `e ∈ T` is an idempotent in the
+image of `h`, then `h⁻¹(e)` contains an idempotent.
 
 ## TODO
 
-* Fill in Main statements above!
 * This file contains a separate proof that the inverse of an isomorphism is an isomorphism. But
 this is also proved in Mathlib.Algebra.Hom.Group, so it would be desirable to apply the version
 of this statement as alredy given, rather than redoing this from scratch.
@@ -144,6 +147,17 @@ lemma J_equiv_hom_stable: hom_stable J_eqv := by
   apply J_order_preserved h at jord₂
   constructor <;> assumption
 
+lemma D_eqiv_hom_stable : hom_stable D_eqv := by
+  intros S₁ S₂ ins1 ins2 h s s' deq
+  simp_all [D_eqv_iff]
+  rcases deq with ⟨x, rord, lord⟩
+  use h x
+  constructor
+  · apply R_equiv_hom_stable
+    exact rord
+  · apply L_equiv_hom_stable
+    exact lord
+
 /-! ## iso-stable relations
 
 This section defines what it means for a family of binary relations on semigroups to be stable
@@ -224,6 +238,10 @@ lemma J_equiv_iso_stable :  iso_stable @J_eqv := by
   apply hom_stable_iso_stable
   exact J_equiv_hom_stable
 
+lemma D_eqiv_iso_stable :  iso_stable @D_eqv := by
+  apply hom_stable_iso_stable
+  exact D_eqiv_hom_stable
+
 /-! ### Powers and Idempotents
 
 This section shows that powering is preserved under homomorphisms, and that idempotents are
@@ -260,7 +278,7 @@ lemma idempotent_iso_preserved (e : S) : IsIdempotentElem e ↔ IsIdempotentElem
 
 /- For finite `S`: If `h : S →ₙ* T` and `e ∈ T` is an idempotent in the image of `h`,
 then `h⁻¹(e)` contains an idempotent.-/
-lemma idempotent_preimage' [Finite S] (e : T) (id : IsIdempotentElem e) (inimage : ∃ g : S, h g = e) : ∃ f : S, (IsIdempotentElem f) ∧ (h f = e) := by
+lemma idempotent_preimage [Finite S] (e : T) (id : IsIdempotentElem e) (inimage : ∃ g : S, h g = e) : ∃ f : S, (IsIdempotentElem f) ∧ (h f = e) := by
   cases' inimage with g hge
   subst hge
   have idpower : ∃ k : ℕ+, (IsIdempotentElem (g^k)) := Semigroup.exists_idempotent_pow g

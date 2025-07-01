@@ -1,4 +1,4 @@
-import MyProject.PnatPow
+import MyProject.PreReq.PnatPow
 
 /-!
 # WithOne Construction for Semigroups

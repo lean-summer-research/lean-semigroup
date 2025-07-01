@@ -1,4 +1,4 @@
-import MyProject.GreensRelations.Quot
+import MyProject.GreensRelations.Misc.Quot
 
 /-!
 # Green's Relations Decidability and Finiteness

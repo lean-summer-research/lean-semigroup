@@ -1,4 +1,4 @@
-import MyProject.GreensRelations.Decidable
+import MyProject.GreensRelations.Misc.Decidable
 
 /-!
 # Green's Relations on Three-Element Function Maps

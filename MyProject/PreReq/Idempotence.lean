@@ -1,18 +1,20 @@
-import MyProject.WithOne
+import MyProject.PreReq.WithOne
 
 /-!
 # Idempotent Elements in Finite Semigroups
 
-This file defines properties related to idempotent elements in finite semigroups.
+This file defines properties related to idempotent elements in finite semigroups and monoids.
 
 ## Main Definitions
 
-* `Semigroup.exists_repeating_pow` - in finite semigroups, powers of any element eventually repeat
-* `Semigroup.pow_idempotent_unique` - if two powers of an element are idempotent, they are equal
-* `Semigroup.exists_idempotent_pow` - every element in a finite semigroup has an idempotent power
-* `Monoid.exists_idempotent_pow` - monoid version defined with Nat pow rather than Pnat pow
+`Semigroup.exists_idempotent_pow` - every element in a finite semigroup has an idempotent power
+
+`Monoid.exists_pow_sandwich_eq_self` - in finite monoids, if `a = x * a * y`, then there exist
+positive integers `n₁` and `n₂` such that `x ^ n₁ * a = a` and `a * y ^ n₂ = a`.
 
 ## Implementation notes
+
+This file should contain all the idempotent-related propositions that do NOT involve greens relations.
 
 `Monoid.exists_idempotent_pow` is useful when reasoning about elements in MONOIDS, when the theorem
 is needed in terms of `Nat` powers greater than `0` rather than `PNat` powers. In the `𝓓 = 𝓙`
@@ -102,5 +104,22 @@ theorem exists_idempotent_pow [Finite M] (x : M) :
   constructor
   · rwa [← PNat.pow_pnat_to_nat]
   · simp [PNat.ne_zero]
+
+/-- In finite monoids, if `a = x * a * y`, then there exist positive integers `n₁` and `n₂`
+such that `x ^ n₁ * a = a` and `a * y ^ n₂ = a`. -/
+lemma exists_pow_sandwich_eq_self [Finite M] {x a y : M} (h : a = x * a * y) :
+    ∃ n₁ n₂ : ℕ, n₁ ≠ 0 ∧ n₂ ≠ 0 ∧ x ^ n₁ * a = a ∧ a * y ^ n₂ = a := by
+  have loop : ∀ k : ℕ, x ^ k * a * y ^ k = a := by
+    intro k; induction k with
+    | zero => simp
+    | succ n ih =>
+      rw [pow_succ, pow_succ']
+      rw [← mul_assoc, mul_assoc _ a, mul_assoc _ x, ← mul_assoc x a y, ← h, ih]
+  have ⟨n₁, ⟨hn₁, hneq₁⟩⟩ := Monoid.exists_idempotent_pow x
+  have ⟨n₂, ⟨hn₂, hneq₂⟩⟩ := Monoid.exists_idempotent_pow y
+  use n₁, n₂
+  constructor; exact hneq₁; constructor; exact hneq₂; constructor
+  · rw [← (loop n₁), ← mul_assoc, ← mul_assoc, hn₁]
+  · rw [← (loop n₂), mul_assoc, hn₂]
 
 end Monoid

@@ -3,44 +3,44 @@ import Mathlib
 /-!
 # Positive Natural Number Exponentiation for Semigroups
 
-This file defines exponentiation operations for elements of a semigroup using positive natural
-numbers (`ℕ+`). It provides the foundational definitions and lemmas for semigroup exponentiation.
+This file defines and instantiates an exponentiation operation on semigroups. Exponentiation is
+typically defined for natural number exponents, but here we require non-zero natural numbers (`ℕ+`)
+because `x^0` is not well defined in a semigroup context.
+
+This file also contains lemmas about the properties of this exponentiation operation and of the
+`ℕ+` type.
 
 ## Main definitions
 
-* `PNat.pnatPow` - exponentiation function for semigroups over positive naturals
-* `PNat.hPow` - instance providing the notation `a ^ n` for semigroups
+Defs and Instances:
+* `PNat.pnatPow`
+* `PNat.hPow`
 
-## Main statements
+Pnat lemmas:
+* `PNat.exists_eq_add_of_lt`
+* `add_sub_cancel'`
+* `n_lt_2nm`
 
-* `PNat.pow_add` - power of a sum equals the product of powers: `x ^ m * x ^ n = x ^ (m + n)`
-* `PNat.pow_mul` - power of a power: `(x ^ n) ^ m = x ^ (m * n)`
-* `PNat.pow_mul_comm'` - powers commute with the base element: `x ^ n * x = x * x ^ n`
-* `PNat.pow_pnat_to_nat` - bridge between PNat powers and standard Nat powers in monoids
-
-## Notations
-
-* `a ^ n` - exponentiation for `a : S` and `n : ℕ+` where `S` is a semigroup
+Exponentiation lemmas:
+* `PNat.pow_one`
+* `PNat.pow_succ`
+* `PNat.pow_add`
+* `PNat.mul_pow_mul`
+* `PNat.pow_mul_comm`
+* `PNat.pow_mul_comm'`
+* `PNat.pow_mul`
+* `PNat.pow_right_comm`
+* `PNat.pow_pnat_to_nat`
 
 ## Implementation notes
 
 The simp-tagged lemmas collectively normalize power expressions when calling `simp`.
 For example, `(a * b) ^ n * (a * b) ^ m * a ^ 1` normalizes to `a * (b * a) ^ (n + m)`.
 
-This is the base file in the project dependency chain. All other files in MyProject
-import Mathlib indirectly through this file.
-
 ## References
 
 Analogous definitions and lemmas for exponentiation in monoids can be found in
 `Mathlib.Algebra.Group.Defs`.
-
-## TODO
-
-* Should we use a notation like `x ^+ n`  for PNat pow instead of using the hPow instance?
-This could be easier becuase it avoids having to deal with the typeclass synthesis which
-can sometimes get confused between PNat and Nat pow when `x` is in a Monoid.
-
 -/
 
 namespace PNat
@@ -76,26 +76,26 @@ variable (x y : S) (n m : ℕ+)
 /-- Exponentiation satisfies the successor property -/
 @[simp] lemma pow_succ : (x ^ n) * x = x ^ (n + 1) := by induction n using PNat.recOn <;> rfl
 
-/-- Multiplicative associativity for powers -/
-@[simp] lemma mul_pow_mul : (x * y) ^ n * x = x * (y * x) ^ n := by
-  induction n using PNat.recOn with
-  | one => simp [← mul_assoc]
-  | succ n ih => simp only [← pow_succ, ← mul_assoc, ih]
-
-/-- For every `x : S` and `n : ℕ+`, the power `x ^ n` commutes with `x` -/
-@[simp] lemma pow_mul_comm' : x ^ n * x = x * x ^ n := by
-  induction n using PNat.recOn with
-  | one    => rfl
-  | succ k ih => rw [← pow_succ, ← mul_assoc, ih]
-
 /-- Power of a sum equals the product of powers -/
 @[simp] lemma pow_add : x ^ m * x ^ n = x ^ (m + n) := by
   induction n using PNat.recOn with
   | one => rw [pow_one, pow_succ]
   | succ k ih => simp_rw [← add_assoc, ← pow_succ, ← mul_assoc, ih]
 
+/-- Multiplicative associativity for powers -/
+@[simp] lemma mul_pow_mul : (x * y) ^ n * x = x * (y * x) ^ n := by
+  induction n using PNat.recOn with
+  | one => simp [← mul_assoc]
+  | succ n ih => simp only [← pow_succ, ← mul_assoc, ih]
+
 /-- Powers of the same element commute with each other -/
 lemma pow_mul_comm : x ^ m * x ^ n = x ^ n * x ^ m := by rw [pow_add, add_comm, pow_add]
+
+/-- For every `x : S` and `n : ℕ+`, the power `x ^ n` commutes with `x` -/
+@[simp] lemma pow_mul_comm' : x ^ n * x = x * x ^ n := by
+  induction n using PNat.recOn with
+  | one    => rfl
+  | succ k ih => rw [← pow_succ, ← mul_assoc, ih]
 
 /-- The power of a power equals the power of the product of exponents -/
 @[simp] lemma pow_mul : (x ^ n) ^ m = x ^ (m * n) := by
