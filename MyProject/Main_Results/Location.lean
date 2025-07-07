@@ -243,26 +243,77 @@ lemma H_mul_closed (he : IsIdempotentElem e)
         exact ⟨L_preorder_trans (a * b) b e (habl.left) (hbe.left),
             L_preorder_trans (e) b (a * b) (hbe.right) (habl.right)⟩
 
+lemma R_eqv_without_one_decomp (h : a 𝓡 b) :
+  (a = b) ∨ (∃ c, a = b * c ∧ ∃ d, b = a * d) := by
+  simp [R_eqv, R_preorder_iff_without_one] at h
+  have ⟨hr, hl⟩ := h
+  cases' hr with hxe hex
+  constructor
+  · exact hxe
+  · cases' hl with hex exx
+    constructor
+    · exact hex.symm
+    · obtain ⟨c, hc⟩ := hex
+      obtain ⟨d, hd⟩ := exx
+      right
+      use c; use hc; use d
+
+lemma L_eqv_without_one_decomp (h : a 𝓛 b) :
+    (a = b) ∨ (∃ c, a = c * b ∧ ∃ d, b = d * a) := by
+  simp [L_eqv, L_preorder_iff_without_one] at h
+  have ⟨hr, hl⟩ := h
+  cases' hr with hxe hex
+  constructor
+  · exact hxe
+  · cases' hl with hex exx
+    constructor
+    · exact hex.symm
+    · obtain ⟨c, hc⟩ := hex
+      obtain ⟨d, hd⟩ := exx
+      right
+      use c; use hc; use d
+
 lemma H_class_has_inverse {S : Type*} [Semigroup S]
     {e x : S} (he : IsIdempotentElem e) (hx : x 𝓗 e) :
     ∃ y : S, x * y = e ∧ y * x = e ∧ y 𝓗 e := by
   rcases H_equiv_iff_exists he hx with ⟨u, v, hu, hv⟩
-  have h1 : x * u * v = e := by
-    rw [hv]
-    simp_rw[mul_assoc v, <-hu]
-    rw [← hu, ← hv] -- back to x
-    -- x * y = x * (u * v) = (x * u) * v = (e * u) * v
-    -- from x = e * u
-    rw [hu]
-    simp_rw [← mul_assoc, he]
-  have h2 : y * x = e := by
-    -- x = e * u, so (u * v) * x = (u * v) * (e * u) = u * (v * e) * u = u * x * u
-    rw [hu]
-    rw [← mul_assoc, ← mul_assoc]
-    rw [hv]
-    simp_rw [← mul_assoc, he]
-  have hy : y 𝓗 e := H_mul_closed he hx hx
-  exact ⟨y, h1, h2, hy⟩
+  have hR := ((H_eqv_iff_L_and_R x e).mp hx).left
+  have hL := ((H_eqv_iff_L_and_R e x).mp hx.symm).right
+  have hRR := R_eqv_without_one_decomp hR
+  have hLL := L_eqv_without_one_decomp hL
+  cases' hRR with heq hneqr
+  · cases' hLL with heql hneql
+    · use e; rw[heq]; simp; exact he
+    · use e; rw[heq]; simp; exact he
+  · cases' hLL with heql hneql
+    · use e; rw[<-heql]; simp; exact he
+    · obtain ⟨c, hc, d, hd⟩ := hneqr
+      obtain ⟨c', hc', d', hd'⟩ := hneql
+      have bijR := right_translation_bijection hc hd
+      have bijL := left_translation_bijection hd' hc'
+      have ⟨hl, hr⟩ := idempotent_identity_H_eqv he hx
+      have hee : e * e = e := he
+      have hle : (L_class_set x) = (L_class_set e) := by
+        refine Eq.symm (Set.ext ?_)
+        intro y
+        unfold L_class_set; simp
+        exact ⟨by intro hye; exact L_eqv_trans hye hL,
+          by intro hye; exact L_eqv_trans hye hL.symm⟩
+      have hre : (R_class_set x) = (R_class_set e) := by
+        refine Eq.symm (Set.ext ?_)
+        intro y
+        unfold R_class_set; simp
+        exact ⟨by intro hye; exact R_eqv_trans hye hR.symm,
+          by intro hye; exact R_eqv_trans hye hR⟩
+      rw[hle] at bijR; rw[hre] at bijL
+      have rtrans := right_translation_id hc hd hL
+      have ltrans := left_translation_id hc' hd' hR
+      use (d * c')
+      constructor
+      · sorry
+      · constructor
+        · sorry
+        · sorry
 
 /- end helper lemmas-/
 
@@ -283,7 +334,7 @@ instance semigroupOnH {e : S} (he : IsIdempotentElem e) :
 instance monoidOnH {e : S} (he : IsIdempotentElem e) :
     Monoid (H_class_set e) where
   toSemigroup := semigroupOnH he
-  one := ⟨e, by simp [H_class_set, Set.mem_setOf_eq, Setoid.refl]⟩
+  one := ⟨e, by simp [H_class_set, Set.mem_setOf_eq]⟩
   one_mul := by
     intro x
     apply Subtype.eq
@@ -293,12 +344,12 @@ instance monoidOnH {e : S} (he : IsIdempotentElem e) :
     apply Subtype.eq
     exact idempotent_right_identity he x.prop
 
-#check Lean.Elab.withLogging
+instance mulOnH {S : Type*} [Semigroup S] (e : S) (he : IsIdempotentElem e):
+    Mul (H_class_set e) where
+  mul := λ a b => ⟨a.val * b.val, H_mul_closed he a.prop b.prop⟩
+
 instance groupOnH {e : S} (he : IsIdempotentElem e) : Group (H_class_set e) where
   toMonoid := monoidOnH he
-  inv :=
-
-  λ x => sorry --need to use Green's lemma induced h-class bijection here
+  inv := λ x => ⟨(H_class_has_inverse he x.prop).choose, (H_class_has_inverse he x.prop).choose_spec.2.2⟩
   inv_mul_cancel := by sorry
-
 end GroupsInSemigroups
