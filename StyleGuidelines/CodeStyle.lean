@@ -1,4 +1,4 @@
-import Mathlib
+import MyProject.Monoid.Local
 
 /-!
 # Style Guidelines
@@ -7,146 +7,91 @@ This file is an assembly of the most relevant content in these documents:
 - Lean Community website: https://leanprover-community.github.io/index.html
 - Library Style Guidlines: https://leanprover-community.github.io/contribute/style.html
 
-## Summary
+I also inserted some examples from our codebase.
+-/
 
-- Code structure and formatting guidelines for definitions, theorems, and proofs
-- Proper use of anonymous functions and tactic blocks
-- Whitespace conventions and use of delimiters
-- Use of operators like `<|` and `|>` to improve readability
-- A discussion of Normal Forms
+namespace Example
 
-## TODO
-
-- Implement a Normal Form for greens Relations (dont write theorems in terms of set membership)
-
+/-!
 ### Line Length
-
-- Lines should not be longer than 100 characters.
+Lines must not be longer than 100 characters.
 
 ### Structuring definitions and theorems
-
-- All declarations (e.g., def, lemma, theorem, class, structure, inductive, instance, etc.)
+All declarations (e.g., def, lemma, theorem, class, structure, inductive, instance, etc.)
 and commands (e.g., variable, open, section, namespace, notation, etc.) are considered
-top-level and these words should appear flush-left in the document. In particular, opening
-a namespace or section does not result in indenting the contents of that namespace or section.
-(Note: within VS Code, hovering over any declaration such as def Foo ... will show the
-fully qualified name, like MyNamespace Foo if Foo is declared while the namespace MyNamespace
-is open.)
+top-level and these words should appear flush-left in the document.
 
-- Use spaces on both sides of ":", ":=" or infix operators. Put them
+Use spaces on both sides of ":", ":=" or infix operators. Put them
 before a line break rather than at the beginning of the next line.
 
-- After stating the theorem, we indent the lines in the subsequent proof by 2 spaces. -/
+When providing a proof in tactic mode, the by is placed on the line prior to the first tactic;
+however, by should not be placed on a line by itself. In practice this means you will often
+see `:= by` at the end of a theorem statement.
 
-open Nat
+After stating the theorem, we indent the lines in the subsequent proof by 2 spaces.
+If the theorem statement requires multiple lines, indent the subsequent lines by 4 spaces.
+The proof is still indented only 2 spaces (not 6 = 4 + 2).
 
-theorem nat_case {P : Nat → Prop} (n : Nat) (H1 : P 0) (H2 : ∀ m, P (succ m)) : P n :=
-  Nat.recOn n H1 (fun m _ ↦ H2 m)
+Examples of **Good Structure** : -/
 
-/-! If the theorem statement requires multiple lines, indent the subsequent lines by 4 spaces.
-The proof is still indented only 2 spaces (not 6 = 4 + 2). When providing a proof in tactic
-mode, the by is placed on the line prior to the first tactic; however, by should not be placed
-on a line by itself. In practice this means you will often see := by at the end of a theorem
-statement. -/
+@[simp]
+lemma RLE.mul_left_compat {M : Type*} [Monoid M]
+    {x y : M} (z : M) (h : x ≤𝓡 y) :
+    z * x ≤𝓡 z * y := by
+  obtain ⟨u, hu⟩ := h
+  use u
+  simp [mul_assoc, hu]
 
-theorem le_induction {P : Nat → Prop} {m}
-    (h0 : P m) (h1 : ∀ n, m ≤ n → P n → P (n + 1)) :
-    ∀ n, m ≤ n → P n := by
-  apply Nat.le.rec
-  · exact h0
-  · exact h1 _
-
-/-! When a proof term takes multiple arguments, it is sometimes clearer, and often necessary,
-to put some of the arguments on subsequent lines. In that case, indent each argument.
-This rule, i.e., indent an additional two spaces, applies more generally whenever
-a term spans multiple lines. -/
-
-axiom zero_or_succ (n : Nat) : n = zero ∨ n = succ (pred n)
-
-theorem nat_discriminate {B : Prop} {n : Nat} (H1: n = 0 → B) (H2 : ∀ m, n = succ m → B) : B :=
-  Or.elim (zero_or_succ n)
-    (fun H3 : n = zero ↦ H1 H3)
-    (fun H3 : n = succ (pred n) ↦ H2 (pred n) H3)
+@[simp] lemma RLE.mul_left_compat' {M : Type*} [Monoid M]
+    {x y : M} (z : M) (h : x ≤𝓡 y) : z * x ≤𝓡 z * y := by
+  obtain ⟨u, hu⟩ := h
+  use u
+  simp [mul_assoc, hu]
 
 /-! A short declaration can be written on a single line: -/
 
-theorem succ_pos : ∀ n : Nat, 0 < succ n := zero_lt_succ
+variable {M : Type*} [Monoid M]
 
-def square (x : Nat) : Nat := x * x
+@[simp] lemma RLE.mul_right_self (x y : M): x * y ≤𝓡 x := by use y
 
 /-!
-- A have can be put on a single line when the justification is short.
-
+### `have` syntax
+A have can be put on a single line when the justification is short:
 ```c
 example (n k : Nat) (h : n < k) : ... :=
   have h1 : n ≠ k := ne_of_lt h
 ```
 
--  When the justification is too long, you should put it on the next line,
-indented by an additional two spaces.
-
+When the justification is too long, you should put it on the next line,
+indented by an additional two spaces:
 ```c
 example (n k : Nat) (h : n < k) : ... :=
   have h1 : n ≠ k := by
     apply ne_of_lt
 ```
+### Grouping definitions
+
+We generally use a blank line to separate theorems and definitions,
+but this can be omitted, for example, to group together a number of short definitions,
+or to group together a definition and notation.
 -/
-/-! When the arguments themselves are long enough to require line breaks, use an additional
-indent for every line after the first, as in the following example: -/
 
-theorem Nat.add_right_inj' {n m k : Nat} : n + m = n + k → m = k :=
-  Nat.recOn n
-    (fun H : 0 + m = 0 + k ↦ calc
-      m = 0 + m := Eq.symm (zero_add m)
-      _ = 0 + k := H
-      _ = k     := zero_add _)
-    (fun (n : Nat) (IH : n + m = n + k → m = k)
-         (H : succ n + m = succ n + k) ↦
-      have H2 : succ (n + m) = succ (n + k) := calc
-        succ (n + m) = succ n + m := Eq.symm (succ_add n m)
-        _ = succ n + k         := H
-        _ = succ (n + k)       := succ_add n k
-      have H3 : n + m = n + k := succ.inj H2
-      IH H3)
+@[simp] lemma RLE.refl (x : M) : x ≤𝓡 x := by use 1; simp
+@[simp] lemma LLE.refl (x : M) : x ≤𝓛 x := by use 1; simp
+@[simp] lemma JLE.refl (x : M) : x ≤𝓙 x := by use 1, 1; simp
+@[simp] lemma HLE.refl (x : M) : x ≤𝓗 x := by simp [HLE]
 
-/-! In a `class` or `structure` definition, fields are indented 2 spaces, and moreover each
-field should have a `docstring`, as in: -/
-
-class Module' (R : Type u) (M : Type v) [Semiring R] [AddCommMonoid M] extends
-    DistribMulAction R M where
-  /-- Scalar multiplication distributes over addition from the right. -/
-  protected add_smul : ∀ (r s : R) (x : M), (r + s) • x = r • x + s • x
-  /-- Scalar multiplication by zero gives zero. -/
-  protected zero_smul : ∀ x : M, (0 : R) • x = 0
-
-/-! When using a constructor taking several arguments in a definition,
-arguments line up, as in: -/
-
-theorem Ordinal.sub_eq_zero_iff_le' {a b : Ordinal} : a - b = 0 ↔ a ≤ b :=
-  ⟨fun h => by simpa only [h, add_zero] using le_add_sub a b,
-   fun h => by rwa [← Ordinal.le_zero, sub_le, add_zero]⟩
-
-/-! We generally use a blank line to separate `theorems` and `definitions`,
-but this can be omitted, for example, to group together a number of short `definitions`,
-or to group together a definition and `notation`.
-
+/-!
 ### Instances
 
-- When providing terms of structures or instances of classes, the `where` syntax
+When providing terms of structures or instances of classes, the `where` syntax
 should be used to avoid the need for enclosing braces, as in: -/
 
-instance instOrderBot : OrderBot ℕ where
-  bot := 0
-  bot_le := Nat.zero_le
+instance RLE.isPreorder : IsPreorder M RLE where
+  refl := RLE.refl
+  trans := by intros x y z h₁ h₂; apply RLE.trans h₁ h₂
 
-/-! If there is already an instance instBot, then one can write
-
-```c
-instance instOrderBot : OrderBot ℕ where
-  __ := instBot
-  bot_le := Nat.zero_le
-```
-
+/-!
 ### Hypotheses Left of Colon
 
 Generally, having arguments to the left of the colon is preferred over having arguments in
@@ -160,15 +105,22 @@ example (n : ℝ) (h : 1 < n) : 0 < n := by linarith
 example (n : ℝ) : 1 < n → 0 < n := fun h ↦ by linarith
 
 /-!
-### `Anonymous functions`
+### Anonymous functions
 
-`Lean` has several nice syntax options for declaring anonymous functions. For very simple
+Lean has several nice syntax options for declaring anonymous functions. For very simple
 functions, one can use the centered dot as the function argument, as in `(· ^ 2)` to represent
 the squaring function. However, sometimes it is necessary to refer to the arguments by name
 (e.g., if they appear in multiple places in the function body). The `Lean` default for this is
 `fun x => x * x`, but the `↦` arrow (inserted with `\mapsto`) is also valid. In `mathlib` the
 pretty printer displays `↦`, and we slightly prefer this in the source as well.
 
+Example: -/
+
+instance REquiv.isEquiv : Equivalence (fun x y : M => x 𝓡 y) := by
+  unfold REquiv
+  exact @EquivOfLE.isEquiv M RLE _
+
+/-!
 ### Tactic Mode
 
 - As we have already mentioned, when opening a tactic block, `by` is placed at the end of the
@@ -273,7 +225,6 @@ example {x y : ℝ} (hxy : x ≤ y) (h : ∀ ε > 0, y - ε ≤ x) : x = y :=
 
 /-!
 ### Normal forms
-
 Some statements are equivalent. For instance, there are several equivalent ways to require that a
 subset `s` of a type is nonempty. For another example, given `a : α`, the corresponding element of
 `Option α` can be equivalently written as `Some a` or `(a : Option α)`. In general, we try to
@@ -282,7 +233,7 @@ of theorems. In the above examples, this would be `s.Nonempty` (which gives acce
 and `(a : Option α)`. Often, `simp` lemmas will be registered to convert the other equivalent forms
 to the normal form.
 
-Iff theorems should be notated such that the more normalized version of the statment is on the right
+Iff theorems should be notated such that the more normalized version of the statement is on the right
 side of the iff. This allows you to use them with `rw` and `simp` without prepending `←`. This also
 is the way that `simp` will try to automatically apply the tactic if you tag it @[simp].
 -/
