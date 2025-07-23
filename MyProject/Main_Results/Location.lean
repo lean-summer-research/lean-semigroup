@@ -273,6 +273,133 @@ lemma L_eqv_without_one_decomp (h : a 𝓛 b) :
       right
       use c; use hc; use d
 
+lemma rightMul_H_bij_on
+    {e x : S} (he : IsIdempotentElem e) (hx : x 𝓗 e) :
+    Set.BijOn (ρᵣ x) (H_class_set e) (H_class_set e) := by
+  have hX := hx
+  rw [H_eqv_iff_L_and_R] at hx
+  rcases hx with ⟨hL, hR⟩
+  have hr := R_eqv_without_one_decomp hL
+  have hl := L_eqv_without_one_decomp hR
+  cases' hr with heq hr
+  · unfold R_translation H_class_set
+    rw[heq]
+    refine Set.BijOn.mk ?_ ?_ ?_
+    · intro x hx; simp
+      refine H_mul_closed he hx ?_
+      exact H_eqv_refl
+    · intro x hx y hy hxy
+      simp at hxy
+      simp at hx hy
+      rw[idempotent_right_identity he hx, idempotent_right_identity he hy] at hxy
+      exact hxy
+    · intro y hy
+      simp; use y
+      constructor
+      · simp at hy; exact hy
+      · simp [idempotent_right_identity he hy]
+  · cases' hl with heq' hl
+    · unfold R_translation H_class_set
+      rw[heq']
+      refine Set.BijOn.mk ?_ ?_ ?_
+      · intro x hx; simp
+        refine H_mul_closed he hx ?_
+        exact H_eqv_refl
+      · intro x hx y hy hxy
+        simp at hxy
+        simp at hx hy
+        rw[idempotent_right_identity he hx, idempotent_right_identity he hy] at hxy
+        exact hxy
+      · intro y hy
+        simp; use y
+        constructor
+        · simp at hy; exact hy
+        · simp [idempotent_right_identity he hy]
+    · unfold R_translation H_class_set Set.BijOn
+      obtain ⟨c, hc, d, hd⟩ := hr
+      obtain ⟨c', hc', d', hd'⟩ := hl
+      refine Set.BijOn.mk ?_ ?_ ?_
+      · intro y hy; simp
+        simp at hy
+        exact H_mul_closed he hy hX
+      · intro a ha b hb hab
+        simp at hab
+        simp at ha hb
+        have hax : a * (x * d) = a := by
+          have := idempotent_right_identity he ha
+          rw[hd] at this; exact this
+        have hba : a = b := by
+          calc
+          a = a * (x * d) := hax.symm
+          _ = b * (x * d) := by simp[<-mul_assoc, hab]
+          _ = b * e := by rw[hd]
+          _ = b := idempotent_right_identity he hb
+        exact hba
+      · intro y hy
+        simp at *
+        have hY := hy
+        rw [H_eqv_iff_L_and_R] at hy
+        obtain ⟨hyL, hyR⟩ := hy
+        have hyxR : y 𝓡 x := R_eqv_trans hyL hL.symm
+        have hyxL : y 𝓛 x := L_eqv_trans hyR hR.symm
+        have hxyR := R_eqv_without_one_decomp hyxR
+        have hxyL := L_eqv_without_one_decomp hyxL
+        cases' hxyR with heq hxyR
+        · cases' hxyL with heq' hxyL
+          · use e; simp [heq]
+            exact (idempotent_identity_H_eqv he hX).left
+          · use e; simp [heq]
+            exact (idempotent_identity_H_eqv he hX).left
+        · cases' hxyL with heq' hxyL
+          · use e; simp [heq']
+            exact (idempotent_identity_H_eqv he hX).left
+          · obtain ⟨f, hf, g, hg⟩ := hxyR
+            obtain ⟨f', hf', g', hg'⟩ := hxyL
+            use e * f' * e
+            constructor
+            · have : (e * f' * e) 𝓗 x := by
+                rw [H_eqv_iff_L_and_R]
+                constructor
+                · constructor
+                  · use d * f' * e
+                    simp[<-mul_assoc, <-WithOne.coe_mul]
+                    rw[<-hd]
+                  · use x * g
+                    have := idempotent_left_identity he hX
+                    nth_rw 1[<-this]
+                    simp[<-mul_assoc, <-WithOne.coe_mul]
+                    have := idempotent_left_identity he hX
+                    nth_rw 2[mul_assoc, this]
+                    nth_rw 1[hg, hf']
+                    simp[<-mul_assoc]
+                · constructor
+                  · use e * f' * d'
+                    simp[mul_assoc, <-WithOne.coe_mul, <-hd']
+                  · use g' * y * g'
+                    nth_rw 2[hd]; simp[ <-WithOne.coe_mul, <-mul_assoc]; simp[mul_assoc, <-hf']
+                    have := idempotent_left_identity he hY
+                    simp[<-mul_assoc, this, <-hg', <-hd]
+                    exact (idempotent_right_identity he hX).symm
+              exact H_eqv_trans this hX
+            · have := idempotent_left_identity he hX
+              simp[mul_assoc, this, <-hf']
+              exact idempotent_left_identity he hY
+
+lemma idempotent_eq_of_H_rel
+    {a b : S} (ha : IsIdempotentElem a) (hb : IsIdempotentElem b) (hab : a 𝓗 b) : a = b := by
+  have hab' := hab
+  rw[H_eqv_iff_L_and_R] at hab
+  obtain ⟨hR, hL⟩ := hab
+  have := R_eqv_without_one_decomp hR
+  cases' this with heq hneq
+  · exact heq
+  · have := L_eqv_without_one_decomp hL
+    cases' this with heq' hneq'
+    · exact heq'
+    · have h1 := idempotent_left_identity ha (hab').symm
+      have h4 := idempotent_right_identity hb hab'
+      rw[h1.symm]; nth_rw 1[h4.symm]
+
 lemma H_class_has_inverse {S : Type*} [Semigroup S]
     {e x : S} (he : IsIdempotentElem e) (hx : x 𝓗 e) :
     ∃ y : S, x * y = e ∧ y * x = e ∧ y 𝓗 e := by
@@ -306,14 +433,29 @@ lemma H_class_has_inverse {S : Type*} [Semigroup S]
         exact ⟨by intro hye; exact R_eqv_trans hye hR.symm,
           by intro hye; exact R_eqv_trans hye hR⟩
       rw[hle] at bijR; rw[hre] at bijL
-      have rtrans := right_translation_id hc hd hL
-      have ltrans := left_translation_id hc' hd' hR
-      use (d * c')
-      constructor
-      · sorry
-      · constructor
-        · sorry
-        · sorry
+      have := rightMul_H_bij_on he hx
+      have heH : e ∈ H_class_set e := by
+        unfold H_class_set; simp [Set.mem_setOf_eq]
+      obtain ⟨y, hyH, hyx⟩ := this.surjOn heH
+      unfold R_translation at hyx
+      have hy1 : y = e * y := by
+        apply (idempotent_identity_H_eqv he hyH).left.symm
+      have hy2 : y = y * e := by
+        apply (idempotent_identity_H_eqv he hyH).right.symm
+      use y; constructor
+      · have : x * y = (x * y) * (x * y) := by
+          calc
+          x * y = x * y := by rfl
+          _ = x * (e * y) := by rw[hy1.symm]
+          _ = x * ((y * x) * y) := by rw[hyx]
+          _ = (x * y) * (x * y) := by simp[mul_assoc]
+        have hxy_idem : IsIdempotentElem (x * y) := by
+          unfold IsIdempotentElem; exact this.symm
+        have hxyH : x * y 𝓗 e := H_mul_closed he hx hyH
+        have hxy_eq_e : x * y = e := by
+          apply (idempotent_eq_of_H_rel he hxy_idem hxyH.symm).symm
+        exact hxy_eq_e
+      · exact ⟨hyx, hyH⟩
 
 /- end helper lemmas-/
 
