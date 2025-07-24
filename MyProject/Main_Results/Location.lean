@@ -328,13 +328,11 @@ lemma rightMul_H_bij_on
         have hax : a * (x * d) = a := by
           have := idempotent_right_identity he ha
           rw[hd] at this; exact this
-        have hba : a = b := by
-          calc
-          a = a * (x * d) := hax.symm
-          _ = b * (x * d) := by simp[<-mul_assoc, hab]
-          _ = b * e := by rw[hd]
-          _ = b := idempotent_right_identity he hb
-        exact hba
+        calc
+        a = a * (x * d) := hax.symm
+        _ = b * (x * d) := by simp[<-mul_assoc, hab]
+        _ = b * e := by rw[hd]
+        _ = b := idempotent_right_identity he hb
       · intro y hy
         simp at *
         have hY := hy
@@ -418,8 +416,6 @@ lemma H_class_has_inverse {S : Type*} [Semigroup S]
       obtain ⟨c', hc', d', hd'⟩ := hneql
       have bijR := right_translation_bijection hc hd
       have bijL := left_translation_bijection hd' hc'
-      have ⟨hl, hr⟩ := idempotent_identity_H_eqv he hx
-      have hee : e * e = e := he
       have hle : (L_class_set x) = (L_class_set e) := by
         refine Eq.symm (Set.ext ?_)
         intro y
@@ -438,10 +434,8 @@ lemma H_class_has_inverse {S : Type*} [Semigroup S]
         unfold H_class_set; simp [Set.mem_setOf_eq]
       obtain ⟨y, hyH, hyx⟩ := this.surjOn heH
       unfold R_translation at hyx
-      have hy1 : y = e * y := by
-        apply (idempotent_identity_H_eqv he hyH).left.symm
-      have hy2 : y = y * e := by
-        apply (idempotent_identity_H_eqv he hyH).right.symm
+      have hy1 : y = e * y := (idempotent_identity_H_eqv he hyH).left.symm
+      have hy2 : y = y * e := (idempotent_identity_H_eqv he hyH).right.symm
       use y; constructor
       · have : x * y = (x * y) * (x * y) := by
           calc
@@ -490,8 +484,63 @@ instance mulOnH {S : Type*} [Semigroup S] (e : S) (he : IsIdempotentElem e):
     Mul (H_class_set e) where
   mul := λ a b => ⟨a.val * b.val, H_mul_closed he a.prop b.prop⟩
 
-instance groupOnH {e : S} (he : IsIdempotentElem e) : Group (H_class_set e) where
+noncomputable instance groupOnH {e : S} (he : IsIdempotentElem e) : Group (H_class_set e) where
   toMonoid := monoidOnH he
-  inv := λ x => ⟨(H_class_has_inverse he x.prop).choose, (H_class_has_inverse he x.prop).choose_spec.2.2⟩
-  inv_mul_cancel := by sorry
+  inv :=  fun x =>
+    let y := Classical.choose (H_class_has_inverse he x.prop)
+    let hy := Classical.choose_spec (H_class_has_inverse he x.prop)
+    ⟨y, hy.2.2⟩
+  inv_mul_cancel := by
+    intro x
+    let y := Classical.choose (H_class_has_inverse he x.prop)
+    let hy := Classical.choose_spec (H_class_has_inverse he x.prop)
+    cases' x with x hx
+    simp
+    apply Subtype.eq
+    exact hy.2.1
+
+def H_contains_idempotent (H : Set S) : Prop :=
+  ∃ e, (IsIdempotentElem e) ∧ (H = H_class_set e)
+
+def H_has_mul_closure (H : Set S) : Prop :=
+  ∃ a b, (a ∈ H) ∧ (b ∈ H) ∧ (a * b ∈ H)
+
+def H_is_maximal_group (H : Set S) : Prop :=
+  ∃ (e : S) (he : IsIdempotentElem e),
+    H = H_class_set e ∧ ∀ (G : Set S), Group G → H ⊆ G → G = H
+
+theorem H_class_tfae {e : S} (H : Set S) (hH : ∃ e, IsIdempotentElem e ∧ H = H_class_set e):
+    List.TFAE [H_contains_idempotent H, H_has_mul_closure H, H_is_maximal_group H] := by
+  tfae_have 1 → 2 := by
+    intro h
+    rcases h with ⟨e, he_idem, heq⟩
+    use e, e
+    constructor
+    · rw[heq]
+      exact Set.mem_setOf_eq.mpr H_eqv_refl
+    constructor
+    · rw[heq]
+      exact Set.mem_setOf_eq.mpr H_eqv_refl
+    · rw[heq]
+      exact H_mul_closed he_idem (Set.mem_setOf_eq.mpr H_eqv_refl) (Set.mem_setOf_eq.mpr H_eqv_refl)
+  tfae_have 2 → 3 := by
+    intro h
+    rcases h with ⟨a, b, ha, hb, hab⟩
+    obtain ⟨e, he_idem, heq⟩ := hH
+    rw[heq] at ha hb hab
+    use e, he_idem
+    constructor
+    · exact heq
+    · intros G hG hsub
+      apply Eq.symm
+      apply Set.Subset.antisymm hsub
+      intro g hg
+      have h_𝓗 : g 𝓗 e := by
+        sorry
+      sorry
+  tfae_have 3 → 1 :=   by
+    intro h_max_group
+    rcases h_max_group with ⟨e, he_idem, heq, hmax⟩
+    use e
+  tfae_finish
 end GroupsInSemigroups
