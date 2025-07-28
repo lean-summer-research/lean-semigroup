@@ -506,41 +506,106 @@ def H_has_mul_closure (H : Set S) : Prop :=
   ∃ a b, (a ∈ H) ∧ (b ∈ H) ∧ (a * b ∈ H)
 
 def H_is_maximal_group (H : Set S) : Prop :=
-  ∃ (e : S) (he : IsIdempotentElem e),
-    H = H_class_set e ∧ ∀ (G : Set S), Group G → H ⊆ G → G = H
+  ∃ (e : S),
+    H = H_class_set e ∧ ∀ (G : Set S), Group G → H ⊆ G → G = H ∧ Group H
 
-theorem H_class_tfae {e : S} (H : Set S) (hH : ∃ e, IsIdempotentElem e ∧ H = H_class_set e):
-    List.TFAE [H_contains_idempotent H, H_has_mul_closure H, H_is_maximal_group H] := by
-  tfae_have 1 → 2 := by
-    intro h
-    rcases h with ⟨e, he_idem, heq⟩
-    use e, e
-    constructor
-    · rw[heq]
-      exact Set.mem_setOf_eq.mpr H_eqv_refl
-    constructor
-    · rw[heq]
-      exact Set.mem_setOf_eq.mpr H_eqv_refl
-    · rw[heq]
-      exact H_mul_closed he_idem (Set.mem_setOf_eq.mpr H_eqv_refl) (Set.mem_setOf_eq.mpr H_eqv_refl)
-  tfae_have 2 → 3 := by
-    intro h
-    rcases h with ⟨a, b, ha, hb, hab⟩
-    obtain ⟨e, he_idem, heq⟩ := hH
-    rw[heq] at ha hb hab
-    use e, he_idem
-    constructor
-    · exact heq
-    · intros G hG hsub
-      apply Eq.symm
-      apply Set.Subset.antisymm hsub
-      intro g hg
-      have h_𝓗 : g 𝓗 e := by
-        sorry
+theorem H_class_tfae {e : S} (H : Set S) (hH : H = H_class_set e):
+        List.TFAE [H_contains_idempotent H, H_has_mul_closure H, H_is_maximal_group H] := by
+    tfae_have 1 → 2 := by
+      intro h
+      rcases h with ⟨e, he, heq⟩
+      unfold H_class_set at heq
+      have : e ∈ H := by rw[heq]; apply H_eqv_refl
+      use e; use e
+      constructor
+      · rw[heq]
+        exact Set.mem_setOf_eq.mpr H_eqv_refl
+      constructor
+      · rw[heq]
+        exact Set.mem_setOf_eq.mpr H_eqv_refl
+      · rw[heq]
+        exact H_mul_closed he (Set.mem_setOf_eq.mpr H_eqv_refl) (Set.mem_setOf_eq.mpr H_eqv_refl)
+    tfae_have 2 → 3 := by
+      intro h
+      rcases h with ⟨a, b, ha, hb, hab⟩
+      obtain ⟨e, heq⟩ := hH
+      have : a * b ∈ R_class_set a ∩ L_class_set b := by
+        unfold H_class_set at *
+        have hr : R_class_set e = R_class_set a := by
+          simp at ha
+          have := ((H_eqv_iff_L_and_R a e).mp ha).left
+          refine Set.ext ?_; intro x
+          simp[R_class_set]
+          constructor
+          · intro hxe; apply R_eqv_trans hxe this.symm
+          · intro hxa; apply R_eqv_trans hxa this
+        have hl : L_class_set e = L_class_set b := by
+          simp at hb
+          have := ((H_eqv_iff_L_and_R b e).mp hb).right
+          refine Set.ext ?_; intro x
+          simp[L_class_set]
+          constructor
+          · intro hxe; apply L_eqv_trans hxe this.symm
+          · intro hxa; apply L_eqv_trans hxa this
+        simp at hab
+        have hlr := (H_eqv_iff_L_and_R (a*b) e).mp hab
+        obtain ⟨left, right⟩ := hlr
+        have habr : a * b ∈ R_class_set e := by exact left
+        have habl : a * b ∈ L_class_set e := by exact right
+        constructor
+        · rw[hr] at habr; exact habr
+        · rw[hl] at habl; exact habl
+      have hRL := RL_intersection_contains_mul_iff_contains_idempotent.mp this
+      obtain ⟨e2, hrl, he2⟩ := hRL
+      have heH : e2 ∈ H_class_set e := by
+        simp only [H_class_set] at ha hb
+        obtain ⟨haR, haL⟩ := (H_eqv_iff_L_and_R a e).mp ha
+        obtain ⟨hbR, hbL⟩ := (H_eqv_iff_L_and_R b e).mp hb
+        have hR : e2 𝓡 e := R_eqv_trans hrl.1 (R_eqv_symm.mp hbR.symm)
+        have hL : e2 𝓛 e := L_eqv_trans hrl.2 (L_eqv_symm.mp haL.symm)
+        exact (H_eqv_iff_L_and_R e2 e).mpr ⟨hR, hL⟩
+      have hh : H_class_set e = H_class_set e2 := by
+        ext z
+        simp [H_class_set] at *
+        apply Iff.intro
+        · intro hz
+          exact H_eqv_trans hz heH.symm
+        · intro hz
+          exact H_eqv_trans hz heH
+      use e2
+      constructor
+      · exact hh
+      · intros G hG hsub
+        have himp := (Set.Subset.antisymm hsub)
+        haveI := groupOnH he2
+        have he2G : e2 ∈ G := by unfold H_class_set at hsub; exact hsub heH
+        rw[hh] at *
+        rw[Set.subset_def] at himp
+        apply Eq.symm; apply himp
+        intro a ha
+        unfold H_class_set; simp
+        set aG : G := ⟨a, ha⟩
+        have : a = aG := by exact rfl
+        rw[this]
+        obtain a_inv := hG.inv aG
+        have hlid : aG * e2 = aG := by sorry
+        have hrid : e2 * aG = aG := by sorry
+        have hrinv : aG * a_inv = e2 := by sorry
+        have hlinv : a_inv * aG = e2 := by sorry
+        rw[H_eqv_iff_L_and_R]
+        constructor
+        · unfold R_eqv eqv_of_preorder
+          constructor
+          · use aG; exact congrArg WithOne.coe (id (Eq.symm hrid))
+          · use a_inv; exact congrArg WithOne.coe (id (Eq.symm hrinv))
+        · unfold L_eqv eqv_of_preorder
+          constructor
+          · use aG; exact congrArg WithOne.coe (id (Eq.symm hlid))
+          · use a_inv; exact congrArg WithOne.coe (id (Eq.symm hlinv))
+    
+    tfae_have 3 → 1 :=   by
+      intro h_max_group
+      unfold H_is_maximal_group at h_max_group
       sorry
-  tfae_have 3 → 1 :=   by
-    intro h_max_group
-    rcases h_max_group with ⟨e, he_idem, heq, hmax⟩
-    use e
-  tfae_finish
+    tfae_finish
 end GroupsInSemigroups
