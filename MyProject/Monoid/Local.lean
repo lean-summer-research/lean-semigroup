@@ -200,32 +200,108 @@ Slight modification to Mathlib's subsemigroup (no setlike and requires semigroup
 
 -/
 
+variable {α : Type*} [Mul α]
 
-structure Subgroup' (α : Type*) [Mul α] where
-  carrier : Set α
-  group : Nonempty (Group ↑carrier)
+structure Submagma' (carrier : Set α) where
+  mul_mem (x y : α) : x ∈ carrier → y ∈ carrier → x * y ∈ carrier
+
+
+structure Subsemigroup' (carrier : Set α) extends Submagma' carrier where
+  mul_assoc (x y z : α) : x ∈ carrier → y ∈ carrier → z ∈ carrier → (x * y) * z = x * (y * z)
+
+namespace Subsemigroup'
+
+instance isSemigroup {s : Set α} (inst : Subsemigroup' s) : Semigroup (↑s) where
+  mul (x y : ↑s) := ⟨↑x * ↑y, by
+    apply inst.mul_mem ↑x ↑y
+    · simp
+    · simp ⟩
+  mul_assoc (x y z : ↑s) := by
+    rw [← Subtype.coe_inj]
+    apply inst.mul_assoc ↑x ↑y ↑z
+    · simp
+    · simp
+    · simp
+
+end Subsemigroup'
+
+structure Submonoid' (carrier : Set α) extends Subsemigroup' carrier where
+  one : α
+  one_mem : one ∈ carrier
+  one_mul (x : α) : x ∈ carrier → one * x = x
+  mul_one (x : α) : x ∈ carrier → x * one = x
+
+namespace Submonoid'
+
+instance hasOne {s : Set α} (inst : Submonoid' s) : One (↑s) where
+  one := ⟨inst.one, inst.one_mem⟩
+
+instance isMonoid {s : Set α} (inst : Submonoid' s) : Monoid (↑s) where
+  toSemigroup := inst.isSemigroup
+  toOne := inst.hasOne
+  one_mul (x : ↑s) := by
+    have hOne := hasOne inst
+    have hEq : (1 : ↑s) = ⟨inst.one, inst.one_mem⟩ := by sorry
+    sorry
+  mul_one (x : ↑s) := by sorry
+
+end Submonoid'
+
+structure Subgroup' (carrier : Set α) extends Submonoid' carrier where
+  inv (x : α) : x ∈ carrier → α
+  inv_mem (x : α) (hx : x ∈ carrier) : inv x hx ∈ carrier
+  inv_mul_cancel (x : α) (hx : x ∈ carrier) : (inv x hx) * x = one
+  mul_inv_cancel (x : α) (hx : x ∈ carrier) : x * (inv x hx) = one
 
 namespace Subgroup'
 
-variable (α : Type*) [Mul α] {x : α} (s : Set α)
+instance {s : Set α} (inst : Subgroup' s) : Group (↑s) where
+  toMonoid := inst.isMonoid
+  inv (x : ↑s) := ⟨inst.inv x.1 x.2, inst.inv_mem x.1 x.2⟩
+  inv_mul_cancel (x : ↑s) := by
+    have hInv := inst.inv x.1 x.2
+    have H := inst.inv_mul_cancel x.1
+    sorry
 
-instance : SetLike (Subgroup' α) α where
-  coe := Subgroup'.carrier
-  coe_injective' := fun l q h => by
-    cases l
-    cases q
-    simp_all
+@[simp] def IsMaximal {s : Set α} (_ : Subgroup' s) : Prop :=
+  ∀ (t : Set α), Subgroup' t → s ⊆ t → s = t
 
-@[simp] lemma mem_carrier {p : Subgroup' α} : x ∈ p ↔ x ∈ p.carrier:= Iff.rfl
+variable {S : Type*} [Semigroup S] {s : Set S} (instS : Subgroup' s)
 
-@[ext] theorem ext {p q : Subgroup' α} (h : ∀ x, x ∈ p ↔ x ∈ q) : p = q := SetLike.ext h
+lemma idempotent_iff_identity {x : S} (hx : x ∈ s) :
+    IsIdempotentElem x ↔ instS.one = x := by
+  constructor
+  · intro hIdem
+    simp_all [IsIdempotentElem]
+    have h := instS.inv_mul_cancel x hx
+    rw [← h]
+    nth_rw 2 [← hIdem]
+    rw [← mul_assoc]
+    rw [instS.inv_mul_cancel x hx]
+    rw [instS.one_mul]
+    exact hx
+  · intro hEq
+    rw [← hEq]
+    simp [IsIdempotentElem]
+    apply instS.one_mul
+    rw [hEq]
+    exact hx
 
-def IsMaximal (S : Subgroup' α) : Prop :=
-  ∀ (T : Subgroup' α), S.carrier ⊆ T.carrier → S = T
+lemma eq_one_of_containing_group {t : Set S} (instT : Subgroup' t) (h : s ⊆ t) :
+    instS.one = instT.one := by
+  have h₁ : IsIdempotentElem (instS.one) := by
+    rw [idempotent_iff_identity instS (instS.one_mem)]
+  have h₂ : instS.one ∈ t := by apply h; exact instS.one_mem
+  have h₃ := idempotent_iff_identity instT h₂
+  symm
+  rw [← h₃]
+  exact h₁
 
 end Subgroup'
 
-lemma HEquiv.mul_mem_if_contains_idempotent' {M : Type*} [Monoid M] {e x y: M} (hidem : IsIdempotentElem e)
+variable {M : Type*} [Monoid M]
+
+lemma HEquiv.mul_mem_if_contains_idempotent {e x y: M} (hidem : IsIdempotentElem e)
     (he : x 𝓗 e) (hy : y 𝓗 e) : x * y 𝓗 e := by
   simp [← HEquiv.rEquiv_and_lEquiv_iff] at he hy ⊢
   rcases hy with ⟨hR₁, hR₂⟩
@@ -239,82 +315,109 @@ lemma HEquiv.mul_mem_if_contains_idempotent' {M : Type*} [Monoid M] {e x y: M} (
   · apply REquiv.trans hR₃ hL₁
   · apply LEquiv.trans hL₃ hR₂
 
-structure HClassIdem (M : Type*) [Monoid M] where
-  e : M
-  hidem : IsIdempotentElem e
+structure withIdempotent (s : Set M) where
+  idem : M
+  hidem : IsIdempotentElem idem
+  idem_in : idem ∈ s
 
 namespace HClassIdem
 
-variable {M : Type*} [Monoid M]
+variable {x : M} (inst : withIdempotent ⟦x⟧𝓗)
 
-@[simp] def Subtype (s : HClassIdem M) := {val : M // val 𝓗 s.e}
-
-instance mulInstance (s : HClassIdem M) : Mul s.Subtype where
-  mul (x y : s.Subtype) := ⟨x.val * y.val, HEquiv.mul_mem_if_contains_idempotent' s.hidem x.prop y.prop⟩
-
-lemma coe_mul {s : HClassIdem M} (x y : s.Subtype) :
-    (x * y).val = x.val * y.val := by rfl
-
-instance semigroupInstance (s : HClassIdem M) : Semigroup s.Subtype where
-  mul_assoc (x y z : s.Subtype) := by
-    simp_all [← Subtype.val_inj]
-    rw [coe_mul, coe_mul, coe_mul, coe_mul]
-    rw [Semigroup.mul_assoc]
-
-instance oneInstance (s : HClassIdem M): One s.Subtype where
-  one := ⟨s.e, by simp⟩
-
-@[simp] lemma coe_one (s : HClassIdem M): (1 : s.Subtype).val = s.e := by rfl
-
-instance monoidInstance (s : HClassIdem M) : Monoid s.Subtype where
-  one_mul (x : s.Subtype):= by
-    simp [← Subtype.coe_inj]
-    rw [coe_mul]
-    simp
-    rw [← RLE.idempotent_iff]
-    · have h := x.prop
-      simp_all
-    · apply s.hidem
-  mul_one (x : s.Subtype) := by
-    simp [← Subtype.coe_inj]
-    rw [coe_mul]
-    simp
-    rw [← LLE.idempotent_iff]
-    · have h := x.prop
-      simp_all
-    · apply s.hidem
-
-lemma exists_inverse {s : HClassIdem M} (x : s.Subtype) : ∃ y : s.Subtype, y * x = 1 := by
-  have hL : s.e ≤𝓛 x.val := by
-    have h := x.prop
-    simp [h]
-  obtain ⟨z, hz⟩ := hL
-  have hH : z 𝓗 s.e := by sorry
-  use ⟨z, hH⟩
-  simp_all [← Subtype.coe_inj]
-  rw [coe_mul]
-  simp_all
-
-noncomputable instance groupInstance (s : HClassIdem M) : Group s.Subtype where
-  inv (x : s.Subtype) := Classical.choose (exists_inverse x)
-  inv_mul_cancel (x : s.Subtype) := by apply Classical.choose_spec (exists_inverse x)
-
-
-instance subgroupInst (s : HClassIdem M) : Subgroup' M where
-  carrier := {val : M | val 𝓗 s.e}
-  group := by
+instance isSubmagma' : Submagma' ⟦x⟧𝓗 where
+  mul_mem z y hz hy:= by
     simp_all
-    have H : Group s.Subtype := groupInstance s
-    rw [Subtype] at H
-    exact Nonempty.intro H
+    have H : x 𝓗 inst.idem := by
+      have h₂ := inst.idem_in
+      simp at h₂
+      exact h₂.symm
+    have hz₂ : z 𝓗 inst.idem := by apply HEquiv.trans hz H
+    have hy₂ : y 𝓗 inst.idem := by apply HEquiv.trans hy H
+    refine HEquiv.trans ?_ H.symm
+    apply HEquiv.mul_mem_if_contains_idempotent inst.hidem hz₂ hy₂
 
-theorem is_maximal_subgroup (s : HClassIdem M) : s.subgroupInst.IsMaximal := by
-  simp_all [Subgroup'.IsMaximal, subgroupInst]
-  intros t hIn
-  ext x
-  simp
-  constructor
-  · intro hH
-    exact hIn hH
-  · intro hT
+instance isSubsemigroup' : Subsemigroup' ⟦x⟧𝓗 where
+  toSubmagma' := isSubmagma' inst
+  mul_assoc z y w hz hy hw := by apply mul_assoc
+
+
+instance isSubmonoid' : Submonoid' (HEquiv.set x) where
+  toSubsemigroup' := isSubsemigroup' inst
+  one := inst.idem
+  one_mem := inst.idem_in
+  one_mul x hz := by
+    rw [← RLE.idempotent_iff]
+    simp_all
+    have h₁ : z ≤𝓡 x := by simp_all
+    have h₂ : x ≤𝓡 inst.idem := by
+      have h₃ := inst.idem_in
+      simp_all
+    apply RLE.trans h₁ h₂
+    exact inst.hidem
+
+lemma exists_inverse {y : M} (hy : y ∈ ⟦x⟧𝓗) : ∃ z, z * y = inst.idem ∧ z ∈ ⟦x⟧𝓗 := by
+  have hH : inst.idem 𝓗 x := inst.idem_in
+  have hL : inst.idem ≤𝓛 y := by
+    have hL₁ : inst.idem ≤𝓛 x := by simp_all
+    have hL₂ : x ≤𝓛 y := by simp_all
+    apply LLE.trans hL₁ hL₂
+  obtain ⟨z, hz⟩ := hL
+  have hz₂ : z ∈ ⟦x⟧𝓗 := by
     sorry
+  exact ⟨z, ⟨hz, hz₂⟩⟩
+-- TODO, dual of above
+
+noncomputable instance isSubgroup' : Subgroup' ⟦x⟧𝓗 where
+  toSubmonoid' := isSubmonoid' inst
+  inv z hz := Classical.choose (exists_inverse inst hz)
+  inv_mem z hz := by
+    have H := Classical.choose_spec (exists_inverse inst hz)
+    apply H.2
+  inv_mul_cancel z hz := by
+    have H := Classical.choose_spec (exists_inverse inst hz)
+    apply H.1
+  mul_inv_cancel z hz := by sorry
+
+lemma one_eq_idem {x : M} (inst : withIdempotent ⟦x⟧𝓗) :
+    (isSubgroup' inst).one = inst.idem := by rfl
+
+/-- For all subgroups on Monoids, every element of the subgroup is
+𝓗-related to the identity -/
+lemma subgroup_H_id {s : Set M} (instS : Subgroup' s) {x : M} (hx : x ∈ s) :
+    x 𝓗 instS.one := by
+  have hIdem := instS.idempotent_iff_identity hx
+  simp [← HEquiv.rEquiv_and_lEquiv_iff]
+  constructor
+  · constructor
+    · use x
+      apply instS.one_mul x hx
+    · use instS.inv x hx
+      apply instS.mul_inv_cancel x hx
+  · constructor
+    · use x
+      apply instS.mul_one x hx
+    · use instS.inv x hx
+      apply instS.inv_mul_cancel x hx
+
+theorem maximal_subgroup : (isSubgroup' inst).IsMaximal := by
+  simp_all
+  rintro t instT hIn
+  ext z
+  constructor
+  · intro hz
+    apply hIn
+    exact hz
+  · intros hz
+    simp_all
+    have hin : inst.idem ∈ t := by apply hIn; exact inst.idem_in
+    have hH₁ : z 𝓗 inst.idem := by
+      have hId₁ : inst.idem = (isSubgroup' inst).one := by rfl
+      have hId₂ : (isSubgroup' inst).one = instT.one :=
+        Subgroup'.eq_one_of_containing_group (isSubgroup' inst) instT hIn
+      rw [hId₁, hId₂]
+      apply subgroup_H_id instT hz
+    have hH₂ : x 𝓗 inst.idem := inst.idem_in.symm
+    apply HEquiv.trans hH₁ hH₂.symm
+
+
+end HClassIdem
