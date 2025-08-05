@@ -10,14 +10,13 @@ import MyProject.Monoid.Finite
 -/
 
 /-!
-### Greens Lemma
-Let `x, y : S` and let `x 𝓡 y` such that `↑x * u = ↑y` and `↑y * v = ↑x` for `u, v ∈ S¹`
-Then the function `f := z => ↓(↑z * u)` is a bijection from `⟦x⟧𝓛 → ⟦y⟧𝓛`
-and `g := z => ↓(v * ↑z)` is its inverse.
-Moreover, these bijections preserve the 𝓗 classes.
+### Greens Lemma (Proposition 1.5)
+Let `x, y : S` and let `x 𝓡 y` such that `x * u = y` and `y * v = x` for `u, v ∈ M`
+Let `ρᵣ u` and `ρᵣ v` be the right translations defined by `(ρᵣ v) z = z * v`
+Then these translations induce inverse bijections from `⟦x⟧𝓛` to `⟦y⟧𝓛`
+Additionally, these bijections preserve the 𝓗 classes.
 
-TODO: We also prove the dual version of this lemma which uses left translations to
-form a bijection on the 𝓡 classes.
+TODO: Dual version
 -/
 
 section Translations
@@ -130,18 +129,13 @@ theorem right_translation_preserves_h (hu : x * u = y) (hv : y * v = x) (ht : t 
 end GreensLemma
 
 /-!
-# Location Theorem
+# Location Theorem (Proposition 1.6)
 
-This file proves the Location Theorem, which states the following conditions are equivalent
-  1. `a * b ∈ R_class_set a ∩ L_class_set b`
-  2. `R_class_set b ∩ L_class_set a` contains an idempotent element.
-  3. (TODO) ``a * b 𝓓 b`?
+Let `x, y : M`,
+then `x * y` is 𝓡-related to `x` and 𝓛-related to `y` iff
+there exists an idmepotetnt that is 𝓛-related to `x` and 𝓡-related to `y`
 
-We also prove the dual version of these statments (TODO)
-
-This file also contains corrolaries about idempotent-containing H-classes
-
-TODO: have a Group Instance for H-classes containing idempotents
+TODO: Prove Dual version
 -/
 
 section Location_Theorem
@@ -180,3 +174,147 @@ theorem RL_intersection_contains_mul_iff_contains_idempotent :
       constructor
       · use u
       · use y
+
+end Location_Theorem
+
+/-!
+### Corrollary 1.7
+
+For a given 𝓗-class `⟦x⟧𝓗`, the following conditions are equivalent:
+1. `⟦x⟧𝓗` contains an idempotent.
+2.  there exist `x, y : M` such that `x * y ∈ ⟦x⟧𝓗`.
+3. `⟦x⟧𝓗` is a maximal group in `M`
+
+### Implementation Notes
+We create the structures `subsemigroup'`, `submonoid'` and `subgroup'` to represent a
+subset `T` of a given semigigroup `S`, implemneted as a set, along with a proof that
+this subset is a semigroup, monoid, or group.
+
+We define the canonical morphism from a subsemigroup, submonid,
+and subgroup to the original semigroup.
+
+Note that Mathlib's Submonoid requires a monoid, (same with group), but ours only
+requires semigroup (could just require mul).
+
+Slight modification to Mathlib's subsemigroup (no setlike and requires semigroup).
+
+-/
+
+
+structure Subgroup' (α : Type*) [Mul α] where
+  carrier : Set α
+  group : Nonempty (Group ↑carrier)
+
+namespace Subgroup'
+
+variable (α : Type*) [Mul α] {x : α} (s : Set α)
+
+instance : SetLike (Subgroup' α) α where
+  coe := Subgroup'.carrier
+  coe_injective' := fun l q h => by
+    cases l
+    cases q
+    simp_all
+
+@[simp] lemma mem_carrier {p : Subgroup' α} : x ∈ p ↔ x ∈ p.carrier:= Iff.rfl
+
+@[ext] theorem ext {p q : Subgroup' α} (h : ∀ x, x ∈ p ↔ x ∈ q) : p = q := SetLike.ext h
+
+def IsMaximal (S : Subgroup' α) : Prop :=
+  ∀ (T : Subgroup' α), S.carrier ⊆ T.carrier → S = T
+
+end Subgroup'
+
+lemma HEquiv.mul_mem_if_contains_idempotent' {M : Type*} [Monoid M] {e x y: M} (hidem : IsIdempotentElem e)
+    (he : x 𝓗 e) (hy : y 𝓗 e) : x * y 𝓗 e := by
+  simp [← HEquiv.rEquiv_and_lEquiv_iff] at he hy ⊢
+  rcases hy with ⟨hR₁, hR₂⟩
+  rcases he with ⟨hL₁, hL₂⟩
+  have h : (x * y) 𝓡 x ∧ (x * y) 𝓛 y := by
+    apply RL_intersection_contains_mul_iff_contains_idempotent.mp
+    use e
+    simp_all
+  rcases h with ⟨hR₃, hL₃⟩
+  constructor
+  · apply REquiv.trans hR₃ hL₁
+  · apply LEquiv.trans hL₃ hR₂
+
+structure HClassIdem (M : Type*) [Monoid M] where
+  e : M
+  hidem : IsIdempotentElem e
+
+namespace HClassIdem
+
+variable {M : Type*} [Monoid M]
+
+@[simp] def Subtype (s : HClassIdem M) := {val : M // val 𝓗 s.e}
+
+instance mulInstance (s : HClassIdem M) : Mul s.Subtype where
+  mul (x y : s.Subtype) := ⟨x.val * y.val, HEquiv.mul_mem_if_contains_idempotent' s.hidem x.prop y.prop⟩
+
+lemma coe_mul {s : HClassIdem M} (x y : s.Subtype) :
+    (x * y).val = x.val * y.val := by rfl
+
+instance semigroupInstance (s : HClassIdem M) : Semigroup s.Subtype where
+  mul_assoc (x y z : s.Subtype) := by
+    simp_all [← Subtype.val_inj]
+    rw [coe_mul, coe_mul, coe_mul, coe_mul]
+    rw [Semigroup.mul_assoc]
+
+instance oneInstance (s : HClassIdem M): One s.Subtype where
+  one := ⟨s.e, by simp⟩
+
+@[simp] lemma coe_one (s : HClassIdem M): (1 : s.Subtype).val = s.e := by rfl
+
+instance monoidInstance (s : HClassIdem M) : Monoid s.Subtype where
+  one_mul (x : s.Subtype):= by
+    simp [← Subtype.coe_inj]
+    rw [coe_mul]
+    simp
+    rw [← RLE.idempotent_iff]
+    · have h := x.prop
+      simp_all
+    · apply s.hidem
+  mul_one (x : s.Subtype) := by
+    simp [← Subtype.coe_inj]
+    rw [coe_mul]
+    simp
+    rw [← LLE.idempotent_iff]
+    · have h := x.prop
+      simp_all
+    · apply s.hidem
+
+lemma exists_inverse {s : HClassIdem M} (x : s.Subtype) : ∃ y : s.Subtype, y * x = 1 := by
+  have hL : s.e ≤𝓛 x.val := by
+    have h := x.prop
+    simp [h]
+  obtain ⟨z, hz⟩ := hL
+  have hH : z 𝓗 s.e := by sorry
+  use ⟨z, hH⟩
+  simp_all [← Subtype.coe_inj]
+  rw [coe_mul]
+  simp_all
+
+noncomputable instance groupInstance (s : HClassIdem M) : Group s.Subtype where
+  inv (x : s.Subtype) := Classical.choose (exists_inverse x)
+  inv_mul_cancel (x : s.Subtype) := by apply Classical.choose_spec (exists_inverse x)
+
+
+instance subgroupInst (s : HClassIdem M) : Subgroup' M where
+  carrier := {val : M | val 𝓗 s.e}
+  group := by
+    simp_all
+    have H : Group s.Subtype := groupInstance s
+    rw [Subtype] at H
+    exact Nonempty.intro H
+
+theorem is_maximal_subgroup (s : HClassIdem M) : s.subgroupInst.IsMaximal := by
+  simp_all [Subgroup'.IsMaximal, subgroupInst]
+  intros t hIn
+  ext x
+  simp
+  constructor
+  · intro hH
+    exact hIn hH
+  · intro hT
+    sorry
