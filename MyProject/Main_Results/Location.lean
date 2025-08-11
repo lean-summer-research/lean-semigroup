@@ -480,10 +480,6 @@ instance monoidOnH {e : S} (he : IsIdempotentElem e) :
     apply Subtype.eq
     exact idempotent_right_identity he x.prop
 
-instance mulOnH {S : Type*} [Semigroup S] (e : S) (he : IsIdempotentElem e):
-    Mul (H_class_set e) where
-  mul := λ a b => ⟨a.val * b.val, H_mul_closed he a.prop b.prop⟩
-
 noncomputable instance groupOnH {e : S} (he : IsIdempotentElem e) : Group (H_class_set e) where
   toMonoid := monoidOnH he
   inv :=  fun x =>
@@ -499,6 +495,9 @@ noncomputable instance groupOnH {e : S} (he : IsIdempotentElem e) : Group (H_cla
     apply Subtype.eq
     exact hy.2.1
 
+end GroupsInSemigroups
+
+/-
 def H_contains_idempotent (H : Set S) : Prop :=
   ∃ e, (IsIdempotentElem e) ∧ (H = H_class_set e)
 
@@ -506,8 +505,9 @@ def H_has_mul_closure (H : Set S) : Prop :=
   ∃ a b, (a ∈ H) ∧ (b ∈ H) ∧ (a * b ∈ H)
 
 def H_is_maximal_group (H : Set S) : Prop :=
-  ∃ (e : S),
-    H = H_class_set e ∧ ∀ (G : Set S), Group G → H ⊆ G → G = H ∧ Group H
+  Nonempty (Group H) ∧ ∀ (G : Set S), Group G → H ⊆ G → G = H
+
+open Subgroup
 
 theorem H_class_tfae {e : S} (H : Set S) (hH : H = H_class_set e):
         List.TFAE [H_contains_idempotent H, H_has_mul_closure H, H_is_maximal_group H] := by
@@ -518,45 +518,35 @@ theorem H_class_tfae {e : S} (H : Set S) (hH : H = H_class_set e):
       have : e ∈ H := by rw[heq]; apply H_eqv_refl
       use e; use e
       constructor
-      · rw[heq]
-        exact Set.mem_setOf_eq.mpr H_eqv_refl
+      · rw[heq]; exact Set.mem_setOf_eq.mpr H_eqv_refl
       constructor
-      · rw[heq]
-        exact Set.mem_setOf_eq.mpr H_eqv_refl
-      · rw[heq]
-        exact H_mul_closed he (Set.mem_setOf_eq.mpr H_eqv_refl) (Set.mem_setOf_eq.mpr H_eqv_refl)
+      · rw[heq]; exact Set.mem_setOf_eq.mpr H_eqv_refl
+      · rw[heq]; exact H_mul_closed he (Set.mem_setOf_eq.mpr H_eqv_refl)
+          (Set.mem_setOf_eq.mpr H_eqv_refl)
     tfae_have 2 → 3 := by
-      intro h
-      rcases h with ⟨a, b, ha, hb, hab⟩
+      intro hc; unfold H_has_mul_closure at hc
+      obtain ⟨a, b, ha, hb, hab⟩ := hc; rw[hH] at *
+      unfold H_class_set at ha; simp at ha
       obtain ⟨e, heq⟩ := hH
+      have hr : R_class_set e = R_class_set a := by
+        have := ((H_eqv_iff_L_and_R a e).mp ha).left
+        refine Set.ext ?_; intro x
+        simp[R_class_set]
+        exact ⟨by intro hxe; apply R_eqv_trans hxe this.symm,
+            by intro hxa; apply R_eqv_trans hxa this⟩
+      have hl : L_class_set e = L_class_set b := by
+        have := ((H_eqv_iff_L_and_R b e).mp hb).right
+        refine Set.ext ?_; intro x
+        simp[L_class_set]
+        exact ⟨by intro hxe; apply L_eqv_trans hxe this.symm,
+            by intro hxa; apply L_eqv_trans hxa this⟩
       have : a * b ∈ R_class_set a ∩ L_class_set b := by
         unfold H_class_set at *
-        have hr : R_class_set e = R_class_set a := by
-          simp at ha
-          have := ((H_eqv_iff_L_and_R a e).mp ha).left
-          refine Set.ext ?_; intro x
-          simp[R_class_set]
-          constructor
-          · intro hxe; apply R_eqv_trans hxe this.symm
-          · intro hxa; apply R_eqv_trans hxa this
-        have hl : L_class_set e = L_class_set b := by
-          simp at hb
-          have := ((H_eqv_iff_L_and_R b e).mp hb).right
-          refine Set.ext ?_; intro x
-          simp[L_class_set]
-          constructor
-          · intro hxe; apply L_eqv_trans hxe this.symm
-          · intro hxa; apply L_eqv_trans hxa this
-        simp at hab
         have hlr := (H_eqv_iff_L_and_R (a*b) e).mp hab
         obtain ⟨left, right⟩ := hlr
-        have habr : a * b ∈ R_class_set e := by exact left
-        have habl : a * b ∈ L_class_set e := by exact right
-        constructor
-        · rw[hr] at habr; exact habr
-        · rw[hl] at habl; exact habl
-      have hRL := RL_intersection_contains_mul_iff_contains_idempotent.mp this
-      obtain ⟨e2, hrl, he2⟩ := hRL
+        rw[<-hr, <-hl]; simp[R_class_set, L_class_set]; exact ⟨left, right⟩
+      have hidem := RL_intersection_contains_mul_iff_contains_idempotent.mp this
+      obtain ⟨e2, hrl, he2⟩ := hidem
       have heH : e2 ∈ H_class_set e := by
         simp only [H_class_set] at ha hb
         obtain ⟨haR, haL⟩ := (H_eqv_iff_L_and_R a e).mp ha
@@ -565,47 +555,61 @@ theorem H_class_tfae {e : S} (H : Set S) (hH : H = H_class_set e):
         have hL : e2 𝓛 e := L_eqv_trans hrl.2 (L_eqv_symm.mp haL.symm)
         exact (H_eqv_iff_L_and_R e2 e).mpr ⟨hR, hL⟩
       have hh : H_class_set e = H_class_set e2 := by
-        ext z
-        simp [H_class_set] at *
+        ext z; simp [H_class_set] at *
         apply Iff.intro
-        · intro hz
-          exact H_eqv_trans hz heH.symm
-        · intro hz
-          exact H_eqv_trans hz heH
-      use e2
+        · intro hz; exact H_eqv_trans hz heH.symm
+        · intro hz; exact H_eqv_trans hz heH
+      unfold H_is_maximal_group
       constructor
-      · exact hh
+      · rw[hh]; have:= groupOnH he2; exact Nonempty.intro this
       · intros G hG hsub
         have himp := (Set.Subset.antisymm hsub)
-        haveI := groupOnH he2
-        have he2G : e2 ∈ G := by unfold H_class_set at hsub; exact hsub heH
-        rw[hh] at *
-        rw[Set.subset_def] at himp
-        apply Eq.symm; apply himp
-        intro a ha
-        unfold H_class_set; simp
-        set aG : G := ⟨a, ha⟩
-        have : a = aG := by exact rfl
-        rw[this]
-        obtain a_inv := hG.inv aG
-        have hlid : aG * e2 = aG := by sorry
-        have hrid : e2 * aG = aG := by sorry
-        have hrinv : aG * a_inv = e2 := by sorry
-        have hlinv : a_inv * aG = e2 := by sorry
-        rw[H_eqv_iff_L_and_R]
+        refine Set.ext ?_; intro x
         constructor
-        · unfold R_eqv eqv_of_preorder
-          constructor
-          · use aG; exact congrArg WithOne.coe (id (Eq.symm hrid))
-          · use a_inv; exact congrArg WithOne.coe (id (Eq.symm hrinv))
-        · unfold L_eqv eqv_of_preorder
-          constructor
-          · use aG; exact congrArg WithOne.coe (id (Eq.symm hlid))
-          · use a_inv; exact congrArg WithOne.coe (id (Eq.symm hlinv))
-    
+        · simp[hh]; unfold H_class_set; simp
+          have he2G : e2 ∈ G := by unfold H_class_set at hsub; exact hsub heH
+          intro hx
+          let e2G : G := ⟨e2, he2G⟩
+          let xG : G := ⟨x, hx⟩
+          let inve2 := hG.inv e2G
+          let invx := hG.inv xG
+          have xRe2 : x 𝓡 e2 := by
+            have hr1: xG = e2G * (inve2 * xG) := by
+              have := hG.mul_assoc e2G ↑inve2 ↑xG
+              simp[<-this]
+              simp_all only [Set.mem_inter_iff, mul_inv_cancel, one_mul, mul_inv_cancel_left, e2G, inve2,
+                xG]
+            have hr2: e2G = xG * (invx * e2G) := by
+              have := hG.mul_assoc xG ↑invx ↑e2G
+              simp[<-this]
+              simp_all only [Set.mem_inter_iff, mul_inv_cancel_left, mul_inv_cancel, one_mul, inve2, e2G, xG, invx]
+            have coe_xG : (xG : S) = x := rfl
+            have coe_e2G : (e2G : S) = e2 := rfl
+            have coe_inve2 : (inve2 : S) = hG.inv e2G := rfl
+            constructor
+            · use ↑(inve2 * xG);
+              have hr1' := congr_arg Subtype.val hr1;
+              simp[<-WithOne.coe_mul, <-coe_xG, <-coe_e2G, <-coe_inve2]
+              simp[<-mul_assoc, coe_mul] at hr1'
+              conv => rhs
+              sorry
+            · use ↑(invx * e2G); sorry /-exact hr2 -- coercion problem -/
+        · exact fun a ↦ hsub a
     tfae_have 3 → 1 :=   by
       intro h_max_group
       unfold H_is_maximal_group at h_max_group
-      sorry
+      obtain ⟨hG, hG_max⟩ := h_max_group
+      obtain ⟨grpH⟩ := hG; rw[hH] at grpH
+      let e := grpH.one
+      have he : IsIdempotentElem e := by
+        unfold IsIdempotentElem;
+        subst hH
+        simp_all only [subset_refl, mul_eq_left, e]
+        obtain ⟨val, property⟩ := e
+        rfl
+      unfold H_contains_idempotent
+      have := groupOnH he
+      use e
+      sorry --coercion problem.
     tfae_finish
-end GroupsInSemigroups
+-/
