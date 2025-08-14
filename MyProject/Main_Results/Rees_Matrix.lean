@@ -11,8 +11,9 @@ instance ReesMul : Mul (ReesMatrix P) where
   mul a b :=
     match a, b with
     | some (i1, g1, j1), some (i2, g2, j2) =>
-        match P j1 i2 with
-        | pval => some (i1, g1 * pval * g2, j2)
+        let mid := P j1 i2
+        let prod := g1 * mid * g2
+        some (i1, prod, j2)
     | _, _ => none
 
 def rees_mul (a b : ReesMatrix P) : ReesMatrix P :=
@@ -80,3 +81,63 @@ instance (P : J → I → G) : Semigroup (ReesMatrix P) where
           exact hfinal
 
 end ReesMatrix
+
+namespace Example
+
+inductive G2 | one | α deriving DecidableEq, Repr
+
+open G2
+
+instance : Group G2 where
+  mul
+    | one, x => x
+    | α, one => α
+    | α, α => one
+  one := one
+  inv
+    | one => one
+    | α => α
+  mul_assoc := by
+    intro a b c
+    cases a <;> cases b <;> cases c <;> rfl
+  one_mul := by intro a; rfl
+  mul_one := by intro a; sorry
+  inv_mul_cancel := by
+    intro a
+    cases a <;> rfl
+
+
+abbrev G2WZ := WithZero G2
+
+def one : G2WZ := some 1
+def α : G2WZ := some G2.α
+instance : BEq G2 := by exact ⟨fun a b => a = b⟩
+
+
+inductive A | a1 | a2 deriving DecidableEq, Repr
+inductive B | b1 | b2 deriving DecidableEq, Repr
+
+open A B
+
+instance : Nonempty A := ⟨a1⟩
+instance : Nonempty B := ⟨b1⟩
+
+def P : B → A → G2WZ
+| b2, a2 => α
+| _, _ => one
+
+abbrev RM := ReesMatrix P
+
+def e1 : ReesMatrix P := some (a1, one, b1)
+def e2 : ReesMatrix P := some (a1, one, b2)
+def e3 : ReesMatrix P := some (a2, one, b1)
+def e4 : ReesMatrix P := some (a2, α, b2)
+
+-- some examples to test the multiplication
+
+#eval! e4 * e4 -- this is an idempotent-- result should be = e4
+#eval! e1 * e2
+#eval! e1 * e3
+#eval! e2 * e3
+
+end Example
