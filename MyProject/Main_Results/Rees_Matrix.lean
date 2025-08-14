@@ -11,9 +11,8 @@ instance ReesMul : Mul (ReesMatrix P) where
   mul a b :=
     match a, b with
     | some (i1, g1, j1), some (i2, g2, j2) =>
-        let mid := P j1 i2
-        let prod := g1 * mid * g2
-        some (i1, prod, j2)
+      match P j1 i2 with
+      | pval => some (i1, g1 * pval * g2, j2)
     | _, _ => none
 
 def rees_mul (a b : ReesMatrix P) : ReesMatrix P :=
@@ -26,7 +25,7 @@ def rees_mul (a b : ReesMatrix P) : ReesMatrix P :=
 
 instance {P : J → I → G} : MulZeroClass (ReesMatrix P) where
   zero := none
-  mul := rees_mul P
+  mul := Mul.mul
   zero_mul := by
     intro x
     cases x with
@@ -40,7 +39,7 @@ instance {P : J → I → G} : MulZeroClass (ReesMatrix P) where
 
 
 instance (P : J → I → G) : Semigroup (ReesMatrix P) where
-  mul := rees_mul P
+  mul := Mul.mul
   mul_assoc := by
     intros a b c
     cases a with
@@ -83,6 +82,8 @@ instance (P : J → I → G) : Semigroup (ReesMatrix P) where
 end ReesMatrix
 
 namespace Example
+/-This implements the simple example for a 2-element group G, as given in the typed up 7/17
+meeting notes.-/
 
 inductive G2 | one | α deriving DecidableEq, Repr
 
@@ -91,7 +92,7 @@ open G2
 instance : Group G2 where
   mul
     | one, x => x
-    | α, one => α
+    | x, one => x
     | α, α => one
   one := one
   inv
@@ -100,8 +101,8 @@ instance : Group G2 where
   mul_assoc := by
     intro a b c
     cases a <;> cases b <;> cases c <;> rfl
-  one_mul := by intro a; rfl
-  mul_one := by intro a; sorry
+  one_mul := by intro x; cases x <;> rfl
+  mul_one := by intro x; cases x <;> rfl
   inv_mul_cancel := by
     intro a
     cases a <;> rfl
@@ -135,9 +136,9 @@ def e4 : ReesMatrix P := some (a2, α, b2)
 
 -- some examples to test the multiplication
 
-#eval! e4 * e4 -- this is an idempotent-- result should be = e4
-#eval! e1 * e2
-#eval! e1 * e3
-#eval! e2 * e3
+#eval e4 * e4 -- this is an idempotent-- result should be e4 = (a2, α, b2)
+#eval e1 * e2 -- this should be e2 = (a1, one, b2)
+#eval e1 * e3 -- should be e1 = (a1, one, b1)
+#eval e2 * e3 -- should be (a1, α, b1)
 
 end Example
