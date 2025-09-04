@@ -1,11 +1,12 @@
 import MyProject.Main_Results.Location
+import MyProject.Misc.SemigroupIdeals
 
-def ReesMatrix {I : Type} {G : Type} {J : Type} (P : J → I → G) := Option (I × G × J)
+@[reducible] def ReesMatrix {I : Type} {G : Type} {J : Type} (P : J → I → G) := Option (I × G × J)
 
 namespace ReesMatrix
 
 variable {G : Type } {I : Type } {J : Type } (P : J → I → G) [Nonempty I] [Nonempty J]
-  [GroupWithZero G] [BEq G]
+  [GroupWithZero G]
 
 instance ReesMul : Mul (ReesMatrix P) where
   mul a b :=
@@ -15,6 +16,8 @@ instance ReesMul : Mul (ReesMatrix P) where
       | pval => some (i1, g1 * pval * g2, j2)
     | _, _ => none
 
+/-- I needed to define this separately to use it in the proof of associativity
+-- otherwise lean complained about the Option wrapper on ReesMatrix-/
 def rees_mul (a b : ReesMatrix P) : ReesMatrix P :=
   match a, b with
   | some (i1, g1, j1), some (i2, g2, j2) =>
@@ -79,12 +82,60 @@ instance (P : J → I → G) : Semigroup (ReesMatrix P) where
           unfold aval' bval' cval' at hfinal
           exact hfinal
 
+/- the following are skeletons for proofs of theorems about the Rees matrix semigroup-/
+
+variable {S : Type*} [Semigroup S]
+
+def IsSimpleSemigroup (S : Type*) [Semigroup S] : Prop :=
+  ∀ I : Set S, (∃ a, I = S •• a) → I = ∅ ∨ I = Set.univ
+
+def IsZeroSimpleSemigroup (S : Type*) [Semigroup S] [Zero S]: Prop :=
+   (∃ a b : S, a * b ≠ 0) ∧
+   (∀ I : Set S, (∃ a, I = S •• a) → I = ∅ ∨ I = {0} ∨ I = Set.univ)
+
+/- the following two lemmas encode Prop 3.1-/
+lemma simple_iff_ideals (S : Type*) [Semigroup S] :
+  IsSimpleSemigroup S ↔ ∀ a : S, two_sided_ideal S a = Set.univ := by
+  sorry
+
+lemma zero_simple_iff_ideals (S : Type*) [Semigroup S] [Zero S] :
+  IsZeroSimpleSemigroup S ↔ (∃ a : S, a ≠ 0) ∧ ∀ a : S, two_sided_ideal S a = Set.univ \ {0} := by
+  sorry
+
+/- notion of regular classes in semigroups-- there are a number of theorems
+about these we may or may not need/want to prove. For now just need them to
+state Theorem 3.2 --/
+
+def is_regular (a : S) : Prop := ∃ s : S, a * s * a = a
+
+def J_class_regular (x : S) : Prop := ∀ a ∈ J_class_set x, is_regular a
+
+def R_class_regular (x : S) : Prop := ∀ a ∈ R_class_set x, is_regular a
+
+def L_class_regular (x : S) : Prop := ∀ a ∈ L_class_set x, is_regular a
+
+def H_class_regular (x : S) : Prop := ∀ a ∈ H_class_set x, is_regular a
+
+ /- this is (part) of Theorem 3.2-/
+ /-need to add in some notion of regularity-- questions about "regular"
+ semigroups-- does this presuppose knowing that the semigroup corresponds to some
+ class in a larger semigroup?
+theorem zero_simple_iff_rees (S : Type*) {x :S} [Semigroup S] [Zero S] :
+  IsZeroSimpleSemigroup S ↔
+  ∃ (I J G: Type) (_ : GroupWithZero G) (P : J → I → G) (iso : S ≃* @ReesMatrix I G J P),
+    Nonempty I ∧ Nonempty J ∧ Nonempty G ∧
+    (∀ a : S, a ≠ 0 → ∃ (i : I) (g : G) (j : J),
+    iso a = (some (i, g, j) : ReesMatrix P)) :=
+sorry
+--/
+
 end ReesMatrix
 
 namespace Example
 /-This implements the simple example for a 2-element group G, as given in the typed up 7/17
 meeting notes.-/
 
+/--defines a group with two elements--/
 inductive G2 | one | α deriving DecidableEq, Repr
 
 open G2
