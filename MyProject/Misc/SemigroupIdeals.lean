@@ -5,9 +5,6 @@ import Mathlib.Algebra.Group.WithOne.Basic
 
 This file defines the notion of ideals in semigroups and gives a characterization of
 Green's relations in terms of these ideals.
-
-We adjoin a unit to the semigroup `S` (denoted `S¹`) so that we can still talk
-about `S¹ • a`, `a • S¹`, `S¹ •• a` just like in the monoid case.
 -/
 
 section IdealCharacterizations
@@ -15,31 +12,45 @@ section IdealCharacterizations
 variable (S) [Semigroup S]
 
 /-- the left ideal `S • a` -/
-def left_ideal [Semigroup S] (a : S) : Set S :=
+def principal_left_ideal [Semigroup S] (a : S) : Set S :=
   {x | ∃ y : S, x = y * a ∨ x = a}
 
 /-- the right ideal `a • S` -/
-def right_ideal [Semigroup S] (a : S) : Set S :=
+def principal_right_ideal [Semigroup S] (a : S) : Set S :=
   {x | ∃ y : S, x = a * y ∨ x = a}
 
 /-- the two-sided ideal `S •• a` -/
-def two_sided_ideal [Semigroup S] (a : S) : Set S :=
+def principal_two_sided_ideal [Semigroup S] (a : S) : Set S :=
   {x | ∃ y z : S, x = y * a * z ∨ x = a}
 
+/-! Principal ideal notation, typed \bub \ ^ P -/
+notation:65 S " •ᴾ " a:66 => principal_left_ideal S a
+notation:65 a:66 " •ᴾ " S => principal_right_ideal S a
+notation:65 S " ••ᴾ " a:66  => principal_two_sided_ideal S a
+
 /-! Ideals of sets (rather than ideals of elements) -/
-/- do we need these? -/
+
+def left_ideal_set [Semigroup S] (A : Set S) : Set S :=
+  {x | ∃ (a : A) (y : S), x = y * a}
+
+def right_ideal_set [Semigroup S] (A : Set S) : Set S :=
+  {x | ∃ (a : A) (y : S), x = a * y}
+
+def two_sided_ideal_set [Semigroup S] (A : Set S) : Set S :=
+  {x | ∃ (a : A) (y z : S), x = y * a * z}
+
 
 /-! Ideal notation, typed \bub -/
-notation:65 S " • " a:66 => left_ideal S a
-notation:65 a:66 " • " S => right_ideal S a
-notation:65 S " •• " a:66  => two_sided_ideal S a
+notation:65 S " • " a:66 => left_ideal_set S a
+notation:65 a:66 " • " S => right_ideal_set S a
+notation:65 S " •• " a:66  => two_sided_ideal_set S a
 
 variable (a b : S)
 
-/-- The left ideal of `a * b` is contained in the left ideal of `b`. -/
-lemma left_ideal_subset (a b : S): (S • (a * b)) ⊆ (S • b) := by
-  simp [left_ideal];
-  intro x y hh
+/-- The principal left ideal of `a * b` is contained in the left ideal of `b`. -/
+@[simp] lemma principal_left_ideal_subset (a b : S): (S •ᴾ (a * b)) ⊆ (S •ᴾ b) := by
+  simp [principal_left_ideal];
+  intro x y  hh
   rcases hh with ⟨rfl | rfl⟩
   · use (y * a : S); simp [mul_assoc]
   · use a ;
@@ -47,9 +58,9 @@ lemma left_ideal_subset (a b : S): (S • (a * b)) ⊆ (S • b) := by
     subst h
     simp_all only [true_or]
 
-/-- The right ideal of `a * b` is contained in the right ideal of `a`. -/
-lemma right_ideal_subset : ((a * b) • S) ⊆ (a • S) := by
-  simp [right_ideal]
+/-- The principal right ideal of `a * b` is contained in the right ideal of `a`. -/
+@[simp] lemma principal_right_ideal_subset : ((a * b) •ᴾ S) ⊆ (a •ᴾ S) := by
+  simp [principal_right_ideal]
   intro x y hh
   rcases hh with ⟨rfl | rfl⟩
   · use (b * y : S); simp [← mul_assoc]
@@ -58,21 +69,31 @@ lemma right_ideal_subset : ((a * b) • S) ⊆ (a • S) := by
     subst h
     simp_all only [true_or]
 
+
 end IdealCharacterizations
 
-/-! Preorder characterizations from ideals -/
-/-
-theorem L_preorder_iff_ideal :
-    a ≤𝓛 b ↔ (S • a) ⊆ (S • b) := by
-  rw [L_preorder_iff_without_one]
-  constructor
+/-! Preorder characterizations from ideals
+variable {S} [Semigroup S] (a b : S)
+
+theorem L_preorder_iff_principal_ideal :
+    a ≤𝓛 b ↔ (S •ᴾ a) ⊆ (S •ᴾ b) := by
+    apply Iff.intro
+    · intro a_1 x h
+      simp[principal_left_ideal]
+      refine exists_or.mpr ?_
+      obtain ⟨y, hy⟩ := a_1
+      use (y * x)
+
+    · intro a_1
+      sorry
+
   · intro h; cases h with
     | inl heq => simp [heq]
     | inr =>
   · intro h
-    simp [left_ideal] at h
+    aesop[principal_left_ideal]
     specialize h a (1 : S¹)
-    simp [← L_preorder_iff_without_one, L_preorder] at h
+    simp [← L_preorder_iff_without_one, L_preorder]
     exact h
 
 theorem R_preorder_iff_ideal :

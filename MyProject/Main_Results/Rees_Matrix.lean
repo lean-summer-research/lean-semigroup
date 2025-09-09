@@ -1,9 +1,10 @@
 import MyProject.Main_Results.Location
 import MyProject.Misc.SemigroupIdeals
 
-@[reducible] def ReesMatrix {I : Type} {G : Type} {J : Type} (P : J → I → G) := Option (I × G × J)
+def ReesMatrix {I : Type} {G : Type} {J : Type} (P : J → I → G) := Option (I × G × J)
+def ReesMatrixNonzero {I J G : Type} (P : J → I → G) := I × G × J
 
-namespace ReesMatrix
+namespace ReesMatrix0
 
 variable {G : Type } {I : Type } {J : Type } (P : J → I → G) [Nonempty I] [Nonempty J]
   [GroupWithZero G]
@@ -82,6 +83,66 @@ instance (P : J → I → G) : Semigroup (ReesMatrix P) where
           unfold aval' bval' cval' at hfinal
           exact hfinal
 
+end ReesMatrix0
+
+namespace ReesMatrixNonzero
+
+variable {I J G : Type} (P : J → I → G) {Nonempty I} {Nonempty J} [Group G]
+
+instance : Coe (ReesMatrixNonzero P) (ReesMatrix P) :=
+  ⟨fun ⟨i, g, j⟩ => some (i, g, j)⟩
+
+instance : Mul (ReesMatrixNonzero P) where
+  mul a b :=
+    match a, b with
+    | (i₁, g₁, j₁), (i₂, g₂, j₂) =>
+        (i₁, g₁ * P j₁ i₂ * g₂, j₂)
+
+def rees_mul_nz (a b : ReesMatrixNonzero P) : ReesMatrixNonzero P :=
+  match a, b with
+  | (i₁, g₁, j₁), (i₂, g₂, j₂) =>
+      (i₁, g₁ * P j₁ i₂ * g₂, j₂)
+
+
+instance : Semigroup (ReesMatrixNonzero P) where
+  mul_assoc := by
+    intros a' b' c'
+    let a : ReesMatrixNonzero P := a'
+    let b : ReesMatrixNonzero P:= b'
+    let c : ReesMatrixNonzero P := c'
+    rcases a' with ⟨i₁, g₁, j₁⟩
+    rcases b' with ⟨i₂, g₂, j₂⟩
+    rcases c' with ⟨i₃, g₃, j₃⟩
+    let mid₁ := P j₁ i₂; let mid₂ := P j₂ i₃
+    have hab : a * b = (i₁, g₁ * mid₁ * g₂, j₂) := by rfl
+    have hbc : b * c = (i₂, g₂ * mid₂ * g₃, j₃) := by rfl
+    have ha_bc : a * (b * c) = (i₁, g₁ * mid₁ * (g₂ * mid₂ * g₃), j₃) := by
+      simp_all only [a, b, mid₁, c, mid₂]; rfl
+    have hab_c : a * b * c = (i₁, (g₁ * mid₁ * g₂) * mid₂ * g₃, j₃) := by
+      simp_all only [a, b, mid₁, c, mid₂]; rfl
+    have heq : (g₁ * mid₁ * g₂) * mid₂ * g₃ = g₁ * mid₁ * (g₂ * mid₂ * g₃) := by simp[mul_assoc]
+    simp_all only [a, b, mid₁, c, mid₂]
+
+/-- Compatibility: mult in `ReesMatrixNoZero` matches `ReesMatrix` coercion.
+To make this work, I need to get the MulOneClass and MulZeroClass multiplication
+of the 0 and nonzero containing RMs to align-- rewrite rees_mul in terms of
+[Mul G], then assert Group/GroupWithZero where needed?-/
+
+theorem coe_mul (a b : ReesMatrixNonzero P) [GroupWithZero G]:
+    (↑(a * b) : ReesMatrix P) = ReesMatrix0.rees_mul P (↑a) (↑b) := by
+  let a' : ReesMatrixNonzero P := a
+  let b' : ReesMatrixNonzero P := b
+  rcases a with ⟨i₁, g₁, j₁⟩
+  rcases b with ⟨i₂, g₂, j₂⟩
+  simp [ReesMatrix0.rees_mul]
+  sorry
+
+end ReesMatrixNonzero
+
+section ReesMatrixTheorems
+variable {G : Type } {I : Type } {J : Type } (P : J → I → G) [Nonempty I] [Nonempty J]
+  [GroupWithZero G]
+
 /- the following are skeletons for proofs of theorems about the Rees matrix semigroup-/
 
 variable {S : Type*} [Semigroup S]
@@ -95,11 +156,11 @@ def IsZeroSimpleSemigroup (S : Type*) [Semigroup S] [Zero S]: Prop :=
 
 /- the following two lemmas encode Prop 3.1-/
 lemma simple_iff_ideals (S : Type*) [Semigroup S] :
-  IsSimpleSemigroup S ↔ ∀ a : S, two_sided_ideal S a = Set.univ := by
+  IsSimpleSemigroup S ↔ ∀ a : S, two_sided_ideal_set S {a} = Set.univ := by
   sorry
 
 lemma zero_simple_iff_ideals (S : Type*) [Semigroup S] [Zero S] :
-  IsZeroSimpleSemigroup S ↔ (∃ a : S, a ≠ 0) ∧ ∀ a : S, two_sided_ideal S a = Set.univ \ {0} := by
+  IsZeroSimpleSemigroup S ↔ (∃ a : S, a ≠ 0) ∧ ∀ a : S, two_sided_ideal_set S {a} = Set.univ \ {0} := by
   sorry
 
 /- notion of regular classes in semigroups-- there are a number of theorems
@@ -116,20 +177,34 @@ def L_class_regular (x : S) : Prop := ∀ a ∈ L_class_set x, is_regular a
 
 def H_class_regular (x : S) : Prop := ∀ a ∈ H_class_set x, is_regular a
 
+def all_J_classes_regular [Semigroup S] := ∀ x : S, J_class_regular x
+
+def regular_semigroup (S : Type*) [Semigroup S] := ∀ x : S, is_regular x
+
  /- this is (part) of Theorem 3.2-/
  /-need to add in some notion of regularity-- questions about "regular"
  semigroups-- does this presuppose knowing that the semigroup corresponds to some
- class in a larger semigroup?
-theorem zero_simple_iff_rees (S : Type*) {x :S} [Semigroup S] [Zero S] :
+ class in a larger semigroup? --/
+
+theorem zero_simple_iff_rees [Semigroup S] [Zero S] [GroupWithZero G] :
   IsZeroSimpleSemigroup S ↔
-  ∃ (I J G: Type) (_ : GroupWithZero G) (P : J → I → G) (iso : S ≃* @ReesMatrix I G J P),
-    Nonempty I ∧ Nonempty J ∧ Nonempty G ∧
+  ∃ (I J : Type)  (P : J → I → G) (iso : S ≃* ReesMatrix P),
+    Nonempty I ∧ Nonempty J ∧ Nonempty G ∧ regular_semigroup S ∧
+    (∃ a b : S, a * b ≠ 0) ∧
     (∀ a : S, a ≠ 0 → ∃ (i : I) (g : G) (j : J),
     iso a = (some (i, g, j) : ReesMatrix P)) :=
 sorry
---/
 
-end ReesMatrix
+theorem simple_iff_rees [Semigroup S] [Group G] :
+  IsSimpleSemigroup S ↔
+  ∃ (I J : Type) (P : J → I → G) (iso : S ≃* ReesMatrixNonzero P),
+    Nonempty I ∧ Nonempty J ∧ Nonempty G ∧ regular_semigroup S ∧
+    (∀ a : S, ∃ (i : I) (g : G) (j : J),
+      iso a = ((i, g, j) : ReesMatrixNonzero P)) :=
+sorry
+
+end ReesMatrixTheorems
+
 
 namespace Example
 /-This implements the simple example for a 2-element group G, as given in the typed up 7/17
