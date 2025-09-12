@@ -19,6 +19,16 @@ namespace LeftIdeal
 
 variable {α : Type*} [Mul α] {x y : α}
 
+instance : EmptyCollection (LeftIdeal α) where
+  emptyCollection := {
+      carrier := ∅
+      mul_mem_mem := by simp}
+
+instance : Top (LeftIdeal α) where
+  top := {
+      carrier := ∅
+      mul_mem_mem := by simp}
+
 /--`SetLike` instance requires we prove that there is an injection from `LeftIdeal → Set`.
 It regesters a coersion to `Set` and provides various simp lemmas and instances-/
 instance : SetLike (LeftIdeal α) α :=
@@ -76,6 +86,15 @@ structure RightIdeal (α : Type*) [Mul α] where
 namespace RightIdeal
 
 variable {α : Type*} [Mul α] {x y : α}
+
+instance : EmptyCollection (RightIdeal α) where
+  emptyCollection := {
+      carrier := ∅
+      mem_mul_mem := by simp}
+
+instance : Top (RightIdeal α) where
+  top := {carrier := Set.univ,
+          mem_mul_mem := by simp_all}
 
 /--`SetLike` instance requires we prove that there is an injection from `LeftIdeal → Set`.
 It regesters a coersion to `Set` and provides various simp lemmas and instances-/
@@ -136,6 +155,17 @@ structure Ideal' (α : Type*) [Mul α] where
 namespace Ideal'
 
 variable {α : Type*} [Mul α] {x y z : α}
+
+instance : EmptyCollection (Ideal' α) where
+  emptyCollection := {
+      carrier := ∅
+      mem_mul_mem := by simp
+      mul_mem_mem := by simp}
+
+instance : Top (Ideal' α) where
+  top := {carrier := Set.univ,
+          mem_mul_mem := by simp_all,
+          mul_mem_mem := by simp_all}
 
 def toLeftIdeal (p : Ideal' α) : LeftIdeal α where
   carrier := p.carrier
@@ -285,16 +315,53 @@ end Ideal'
 
 /-! ### (TODO) Minimal Ideals-/
 
-/- We prove that a semigroup has at most one minimal ideal -/
+variable {α : Type*} [Mul α]
 
-/-! ### (TODO) Zero-Minimal Ideals-/
+namespace Ideal'
+
+def isMinimal (I : Ideal' α) : Prop :=
+  I ≠ ∅ ∧ ∀ (J : Ideal' α), J ≠ ∅ → J ≤ I → J = I
+
+def isZeroMinimal [MulZeroClass α] (I : Ideal' α) : Prop :=
+  I ≠ ∅ ∧ I.carrier ≠ {0} ∧
+    ∀ (J : Ideal' α), J ≠ ∅ → J ≤ I → (J = I ∨ J.carrier = {0})
+
+example : (a b : Set α) : a ⊆ b
+
+/- We prove that a semigroup has at most one minimal ideal
+Because`I ∩ J = ∅` and is an ideal contained in both,
+minimality implies `I = I ∩ J` and `J = I ∩ J`, so `I = J` -/
+theorem minimal_ideal_unique  (I J : Ideal' α) (hI : isMinimal I) (hJ : isMinimal J) :
+    I = J := by
+  rcases hI with ⟨hI₁, hI₂⟩
+  rcases hJ with ⟨hJ₁, hJ₂⟩
+  have hIJ := hI₂ J hJ₁
+  have hJI := hJ₂ I hI₁
+  have h : (I ≤ J) ∨ (J ≤ I) := by sorry
+  rcases h with (h₁ | h₂)
+  · exact hJI h₁
+  · symm; exact hIJ h₂
+
+/- TODO: Lemma; Every finite semigroup has a unique minimal ideal -/
 
 /- Lemma: If `S` has a zero `0`, then `{0}` is a minimal ideal -/
+variable {S : Type*} [SemigroupWithZero S]
+
+lemma zero_is_minimal : isMinimal (Ideal'.principal (0 : S)) := by sorry
+
+end Ideal'
+
 
 /-! ### (TODO) Simple and Zero-Simple semigroups
 A Semigroup `S` is simple if its only ideals are `∅ and S`.
 If `S` has a zero element, it is zero-simple if its only ideals are `∅, {0}, and S`.
 Left/right simple semigroups are defined analogously. -/
+
+
+def isSimple (S : Type*) [Semigroup S] : Prop := ∀ (I : Ideal' S), I = ∅ ∨ I = ⊤
+
+def isZeroSimple (S : Type*) [SemigroupWithZero S] : Prop :=
+  ∀ (I : Ideal' S), I = ∅ ∨ I.carrier = {0} ∨ I = ⊤
 
 /- Lemma: If `S` is 0-simple, then `S² = S`-/
 
