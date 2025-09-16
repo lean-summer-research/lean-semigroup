@@ -156,6 +156,27 @@ namespace Ideal'
 
 variable {α : Type*} [Mul α] {x y z : α}
 
+/--The intersection of two ideals is an ideal-/
+instance : Inter (Ideal' α) where
+  inter p q := {
+    carrier := p.carrier ∩ q.carrier
+    mem_mul_mem := by
+      intros x hx y
+      rcases hx with ⟨hxp, hxq⟩
+      constructor
+      . exact p.mem_mul_mem hxp y -- Proof for `x * y ∈ p.carrier`
+      . exact q.mem_mul_mem hxq y -- Proof for `x * y ∈ q.carrier`
+    mul_mem_mem := by
+      intros x hx y
+      rcases hx with ⟨hxp, hxq⟩
+      constructor
+      . exact p.mul_mem_mem hxp y -- Proof for `y * x ∈ p.carrier`
+      . exact q.mul_mem_mem hxq y -- Proof for `y * x ∈ q.carrier`
+  }
+@[simp] lemma inter_coe {p q : Ideal' α} : ↑(p ∩ q) = ↑p ∩ ↑q := rfl
+
+
+
 instance : EmptyCollection (Ideal' α) where
   emptyCollection := {
       carrier := ∅
@@ -326,21 +347,48 @@ def isZeroMinimal [MulZeroClass α] (I : Ideal' α) : Prop :=
   I ≠ ∅ ∧ I.carrier ≠ {0} ∧
     ∀ (J : Ideal' α), J ≠ ∅ → J ≤ I → (J = I ∨ J.carrier = {0})
 
-example : (a b : Set α) : a ⊆ b
 
 /- We prove that a semigroup has at most one minimal ideal
 Because`I ∩ J = ∅` and is an ideal contained in both,
 minimality implies `I = I ∩ J` and `J = I ∩ J`, so `I = J` -/
-theorem minimal_ideal_unique  (I J : Ideal' α) (hI : isMinimal I) (hJ : isMinimal J) :
+lemma exists_mem_of_ne_empty {I : Ideal' α} (h : I ≠ ∅) : ∃ x, x ∈ I := by
+  -- turn `I ≠ ∅` (as an `Ideal'`) into `(I : Set α) ≠ ∅`
+  have hset : (I : Set α) ≠ ∅ := by
+    intro hh
+    -- `hh : (I : Set α) = ∅` gives `I = ∅` by SetLike.coe_injective
+    have : I = ∅ := SetLike.coe_injective hh
+    exact h this
+  -- use the set-lemma to get a witness
+  rcases Set.nonempty_iff_ne_empty.mpr hset with ⟨x, hx⟩
+  exact ⟨x, hx⟩
+
+theorem minimal_ideal_unique (I J : Ideal' α) (hI : isMinimal I) (hJ : isMinimal J) :
     I = J := by
-  rcases hI with ⟨hI₁, hI₂⟩
-  rcases hJ with ⟨hJ₁, hJ₂⟩
-  have hIJ := hI₂ J hJ₁
-  have hJI := hJ₂ I hI₁
-  have h : (I ≤ J) ∨ (J ≤ I) := by sorry
-  rcases h with (h₁ | h₂)
-  · exact hJI h₁
-  · symm; exact hIJ h₂
+  rcases hI with ⟨hI_ne, hI_min⟩
+  rcases hJ with ⟨hJ_ne, hJ_min⟩
+
+  rcases exists_mem_of_ne_empty hI_ne with ⟨a, ha⟩
+  rcases exists_mem_of_ne_empty hJ_ne with ⟨b, hb⟩
+
+  have hab : a * b ∈ (I ∩ J : Set α) := by
+    constructor
+    · exact I.mul_right_mem ha
+    · exact J.mul_left_mem hb
+
+  -- show I ∩ J is nonempty (by contradiction)
+  have h_inter_ne : (I ∩ J) ≠ ∅ := by
+    intro H
+    have hset : (I ∩ J : Set α) = ∅ := congrArg (fun K : Ideal' α => (K : Set α)) H
+    rw [hset] at hab
+    exact hab
+
+  -- this is a bit terse. we apply minimiality to show I ∩ J is a subset of I, first showing nonempty
+  have HI := (hI_min (I ∩ J) h_inter_ne (by intro x hx; exact hx.1)).symm
+  have HJ := (hJ_min (I ∩ J) h_inter_ne (by intro x hx; exact hx.2)).symm
+
+  -- compose to get I = J
+  exact HI.trans HJ.symm
+
 
 /- TODO: Lemma; Every finite semigroup has a unique minimal ideal -/
 
