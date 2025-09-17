@@ -26,7 +26,7 @@ def rees_mul (a b : ReesMatrix P) : ReesMatrix P :=
       | pval => some (i1, g1 * pval * g2, j2)
   | _, _ => none
 
-
+/-
 instance {P : J → I → G} : MulZeroClass (ReesMatrix P) where
   zero := none
   mul := Mul.mul
@@ -40,7 +40,7 @@ instance {P : J → I → G} : MulZeroClass (ReesMatrix P) where
     cases x with
     | none => rfl
     | some _ => rfl
-
+--/
 
 instance (P : J → I → G) : Semigroup (ReesMatrix P) where
   mul := Mul.mul
@@ -103,7 +103,6 @@ def rees_mul_nz (a b : ReesMatrixNonzero P) : ReesMatrixNonzero P :=
   | (i₁, g₁, j₁), (i₂, g₂, j₂) =>
       (i₁, g₁ * P j₁ i₂ * g₂, j₂)
 
-
 instance : Semigroup (ReesMatrixNonzero P) where
   mul_assoc := by
     intros a' b' c'
@@ -129,13 +128,13 @@ of the 0 and nonzero containing RMs to align-- rewrite rees_mul in terms of
 [Mul G], then assert Group/GroupWithZero where needed?-/
 
 theorem coe_mul (a b : ReesMatrixNonzero P) [GroupWithZero G]:
-    (↑(a * b) : ReesMatrix P) = ReesMatrix0.rees_mul P (↑a) (↑b) := by
+    (a * b : ReesMatrix P) = ReesMatrix0.rees_mul P (↑a) (↑b) := by
   let a' : ReesMatrixNonzero P := a
   let b' : ReesMatrixNonzero P := b
   rcases a with ⟨i₁, g₁, j₁⟩
   rcases b with ⟨i₂, g₂, j₂⟩
   simp [ReesMatrix0.rees_mul]
-  sorry
+  rfl
 
 end ReesMatrixNonzero
 
@@ -148,7 +147,7 @@ variable {G : Type } {I : Type } {J : Type } (P : J → I → G) [Nonempty I] [N
 variable {S : Type*} [Semigroup S]
 
 def IsSimpleSemigroup (S : Type*) [Semigroup S] : Prop :=
-  ∀ I : Set S, (∃ a, I = S •• a) → I = ∅ ∨ I = Set.univ
+  ∀ I : Set S, (∃ a, I = S •• a) → (I = ∅) ∨ (I = Set.univ)
 
 def IsZeroSimpleSemigroup (S : Type*) [Semigroup S] [Zero S]: Prop :=
    (∃ a b : S, a * b ≠ 0) ∧
@@ -177,31 +176,53 @@ def L_class_regular (x : S) : Prop := ∀ a ∈ L_class_set x, is_regular a
 
 def H_class_regular (x : S) : Prop := ∀ a ∈ H_class_set x, is_regular a
 
-def all_J_classes_regular [Semigroup S] := ∀ x : S, J_class_regular x
+def all_J_classes_regular (S : Type*) [Semigroup S] := ∀ x : S, J_class_regular x
 
 def regular_semigroup (S : Type*) [Semigroup S] := ∀ x : S, is_regular x
 
- /- this is (part) of Theorem 3.2-/
- /-need to add in some notion of regularity-- questions about "regular"
- semigroups-- does this presuppose knowing that the semigroup corresponds to some
- class in a larger semigroup? --/
+lemma regular_iff_J_regular (S : Type*) [Semigroup S] :
+  regular_semigroup S ↔ all_J_classes_regular S := by
+  apply Iff.intro
+  · intro a
+    exact fun x a_1 a_2 ↦ a a_1
+  · intro h x
+    have hx := h x
+    unfold J_class_regular at hx
+    have : x ∈ J_class_set x := by
+      unfold J_class_set
+      simp
+    exact h x x this
 
-theorem zero_simple_iff_rees [Semigroup S] [Zero S] [GroupWithZero G] :
-  IsZeroSimpleSemigroup S ↔
-  ∃ (I J : Type)  (P : J → I → G) (iso : S ≃* ReesMatrix P),
-    Nonempty I ∧ Nonempty J ∧ Nonempty G ∧ regular_semigroup S ∧
-    (∃ a b : S, a * b ≠ 0) ∧
-    (∀ a : S, a ≠ 0 → ∃ (i : I) (g : G) (j : J),
-    iso a = (some (i, g, j) : ReesMatrix P)) :=
-sorry
+
+ /- this is (part) of Theorem 3.2-/
+ /-Using MulEquiv to indicate "semigroup isomorphism"-- to replace?--/
+
+theorem zero_simple_iff_rees [SemigroupWithZero S] [GroupWithZero G] :
+        IsZeroSimpleSemigroup S ↔
+        ∃ (I J : Type)  (P : J → I → G) (iso : S ≃* ReesMatrix P),
+        Nonempty I ∧ Nonempty J ∧ Nonempty G ∧ regular_semigroup S ∧
+        (∃ a b : S, a * b ≠ 0) ∧
+        (∀ a : S, a ≠ 0 → ∃ (i : I) (g : G) (j : J),
+        iso a = (some (i, g, j) : ReesMatrix P)) := by
+  simp_all only [ne_eq, exists_and_left]
+  apply Iff.intro
+  · intro a
+    sorry
+  · intro a
+    sorry
 
 theorem simple_iff_rees [Semigroup S] [Group G] :
-  IsSimpleSemigroup S ↔
-  ∃ (I J : Type) (P : J → I → G) (iso : S ≃* ReesMatrixNonzero P),
-    Nonempty I ∧ Nonempty J ∧ Nonempty G ∧ regular_semigroup S ∧
-    (∀ a : S, ∃ (i : I) (g : G) (j : J),
-      iso a = ((i, g, j) : ReesMatrixNonzero P)) :=
-sorry
+        IsSimpleSemigroup S ↔
+        ∃ (I J : Type) (P : J → I → G) (iso : S ≃* ReesMatrixNonzero P),
+        Nonempty I ∧ Nonempty J ∧ Nonempty G ∧ regular_semigroup S ∧
+        (∀ a : S, ∃ (i : I) (g : G) (j : J),
+        iso a = ((i, g, j) : ReesMatrixNonzero P)) := by
+  simp_all only [exists_and_left]
+  apply Iff.intro
+  · intro a
+    sorry
+  · intro a
+    sorry
 
 end ReesMatrixTheorems
 
