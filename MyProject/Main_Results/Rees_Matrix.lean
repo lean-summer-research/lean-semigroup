@@ -145,21 +145,27 @@ variable {G : Type } {I : Type } {J : Type } (P : J → I → G) [Nonempty I] [N
 /- the following are skeletons for proofs of theorems about the Rees matrix semigroup-/
 
 variable {S : Type*} [Semigroup S]
-
+/-NOTE: the book seems to allow ideals to be the empty set, hence the below defs of
+simple/zero simple. If we decide to define ideals as never empty that ideals are nonempty
+we should edit these-/
 def IsSimpleSemigroup (S : Type*) [Semigroup S] : Prop :=
-  ∀ I : Set S, (∃ a, I = S •• a) → (I = ∅) ∨ (I = Set.univ)
+  ∀ I : Set S, (I = Ideal' S) → (I = ∅) ∨ (I = Set.univ)
 
 def IsZeroSimpleSemigroup (S : Type*) [Semigroup S] [Zero S]: Prop :=
    (∃ a b : S, a * b ≠ 0) ∧
-   (∀ I : Set S, (∃ a, I = S •• a) → I = ∅ ∨ I = {0} ∨ I = Set.univ)
+   (∀ I : Set S, (I = Ideal' S) → I = ∅ ∨ I = {0} ∨ I = Set.univ)
 
 /- the following two lemmas encode Prop 3.1-/
 lemma simple_iff_ideals (S : Type*) [Semigroup S] :
-  IsSimpleSemigroup S ↔ ∀ a : S, two_sided_ideal_set S {a} = Set.univ := by
-  sorry
+  IsSimpleSemigroup S ↔ ∀ a : S, (Ideal'.principal a : Set S) = Set.univ := by
+  apply Iff.intro
+  · intro a a_1
+    sorry
+  · intro a
+    sorry
 
-lemma zero_simple_iff_ideals (S : Type*) [Semigroup S] [Zero S] :
-  IsZeroSimpleSemigroup S ↔ (∃ a : S, a ≠ 0) ∧ ∀ a : S, two_sided_ideal_set S {a} = Set.univ \ {0} := by
+lemma zero_simple_iff_ideals (S : Type*) [Semigroup S] [SemigroupWithZero S] :
+  IsZeroSimpleSemigroup S ↔ (∃ a : S, a ≠ 0) ∧ ∀ a : S, (Ideal'.principal a : Set S) = Set.univ \ {0} := by
   sorry
 
 /- notion of regular classes in semigroups-- there are a number of theorems
