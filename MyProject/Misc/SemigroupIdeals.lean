@@ -452,3 +452,5 @@ def isZeroSimple (S : Type*) [SemigroupWithZero S] : Prop :=
 /- Lemma: If `S` is 0-simple, then `S² = S`-/
 
 /- Lemma: `S` is simple ↔ `SsS = S` for every `s ∈ S`-/
+
+

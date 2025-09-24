@@ -145,27 +145,55 @@ variable {G : Type } {I : Type } {J : Type } (P : J → I → G) [Nonempty I] [N
 /- the following are skeletons for proofs of theorems about the Rees matrix semigroup-/
 
 variable {S : Type*} [Semigroup S]
-/-NOTE: the book seems to allow ideals to be the empty set, hence the below defs of
-simple/zero simple. If we decide to define ideals as never empty that ideals are nonempty
-we should edit these-/
-def IsSimpleSemigroup (S : Type*) [Semigroup S] : Prop :=
-  ∀ I : Set S, (I = Ideal' S) → (I = ∅) ∨ (I = Set.univ)
 
-def IsZeroSimpleSemigroup (S : Type*) [Semigroup S] [Zero S]: Prop :=
-   (∃ a b : S, a * b ≠ 0) ∧
-   (∀ I : Set S, (I = Ideal' S) → I = ∅ ∨ I = {0} ∨ I = Set.univ)
+/- Prop 3.1 (about simple/zero simple)-- to delete? may fit better
+be covered in SemigroupIdeals file-/
 
-/- the following two lemmas encode Prop 3.1-/
-lemma simple_iff_ideals (S : Type*) [Semigroup S] :
-  IsSimpleSemigroup S ↔ ∀ a : S, (Ideal'.principal a : Set S) = Set.univ := by
+/- helper lemmas -/
+lemma Ideal'.nonempty_if_ne_emptyset {S : Type*} [Semigroup S]
+  (I : Ideal' S) (hI : I ≠ ∅) : (I : Set S).Nonempty := by
+  contrapose! hI
+  ext x
   apply Iff.intro
-  · intro a a_1
-    sorry
   · intro a
-    sorry
+    apply SetLike.mem_of_subset
+    on_goal 2 => {exact a}
+    · simp_all only [Set.empty_subset]
+  · intro a
+    apply SetLike.mem_of_subset
+    · simp_all only [Set.subset_empty_iff]
+      exact hI
+    · simp_all only [Set.mem_empty_iff_false]
+      exact a
+
+lemma simple_iff_ideals (S : Type*) [Semigroup S] :
+  isSimple S ↔ ∀ a : S, Ideal'.principal a = ⊤ := by
+  apply Iff.intro
+  · intro h a
+    have h' := h (Ideal'.principal a)
+    cases h' with
+    | inl h_empty =>
+      have : a ∈ (Ideal'.principal a : Set S) := by
+        simp [Ideal'.principal, Ideal'.ofSet_coe]
+      simp[h_empty] at *
+      cases this
+    | inr h_top =>
+      exact h_top
+  · intro h I
+    by_cases hI : I = ∅
+    · left; exact hI
+    · right
+      obtain ⟨x, hx⟩ := Ideal'.nonempty_if_ne_emptyset I hI
+      have incl : Ideal'.principal x ≤ I := by
+        simp_all only [SetLike.mem_coe]
+        sorry
+      rw [h x] at incl
+      apply le_antisymm; exact fun ⦃x⦄ a ↦ trivial
+      exact incl
+
 
 lemma zero_simple_iff_ideals (S : Type*) [Semigroup S] [SemigroupWithZero S] :
-  IsZeroSimpleSemigroup S ↔ (∃ a : S, a ≠ 0) ∧ ∀ a : S, (Ideal'.principal a : Set S) = Set.univ \ {0} := by
+  isZeroSimple S ↔ (∃ a : S, a ≠ 0) ∧ ∀ a : S, a ≠ 0 → Ideal'.principal a = ⊤ := by
   sorry
 
 /- notion of regular classes in semigroups-- there are a number of theorems
@@ -199,12 +227,11 @@ lemma regular_iff_J_regular (S : Type*) [Semigroup S] :
       simp
     exact h x x this
 
-
  /- this is (part) of Theorem 3.2-/
  /-Using MulEquiv to indicate "semigroup isomorphism"-- to replace?--/
 
 theorem zero_simple_iff_rees [SemigroupWithZero S] [GroupWithZero G] :
-        IsZeroSimpleSemigroup S ↔
+        isZeroSimple S ↔
         ∃ (I J : Type)  (P : J → I → G) (iso : S ≃* ReesMatrix P),
         Nonempty I ∧ Nonempty J ∧ Nonempty G ∧ regular_semigroup S ∧
         (∃ a b : S, a * b ≠ 0) ∧
@@ -218,7 +245,7 @@ theorem zero_simple_iff_rees [SemigroupWithZero S] [GroupWithZero G] :
     sorry
 
 theorem simple_iff_rees [Semigroup S] [Group G] :
-        IsSimpleSemigroup S ↔
+        isSimple S ↔
         ∃ (I J : Type) (P : J → I → G) (iso : S ≃* ReesMatrixNonzero P),
         Nonempty I ∧ Nonempty J ∧ Nonempty G ∧ regular_semigroup S ∧
         (∀ a : S, ∃ (i : I) (g : G) (j : J),
