@@ -395,7 +395,45 @@ theorem minimal_ideal_unique (I J : Ideal' α) (hI : isMinimal I) (hJ : isMinima
 /- Lemma: If `S` has a zero `0`, then `{0}` is a minimal ideal -/
 variable {S : Type*} [SemigroupWithZero S]
 
-lemma zero_is_minimal : isMinimal (Ideal'.principal (0 : S)) := by sorry
+lemma principal_zero_eq : (principal (0 : S) : Set S) = {0} := by
+  ext x -- tactic that reduces to proving `A=B` (as sets) to `x ∈ A ↔ x ∈ B`
+  simp only [Set.mem_singleton_iff] -- replaces `x ∈ {0}` with `x=0`
+  constructor
+  · intro hx -- `x ∈ principal (0 : S) → x = 0`
+    simp [principal, ofSet, LeftIdeal.ofSet, RightIdeal.ofSet, Set.mem_union,
+          Set.mem_mul, Set.mem_univ, Set.mem_singleton_iff] at hx
+    -- `hx` is now a big "or" statement. We check every case.
+    rcases hx with (((⟨a, c, rfl⟩ | ⟨a, rfl⟩) | rfl) | ⟨b, rfl⟩) | rfl
+    · simp [mul_zero, zero_mul] -- Case `x = a * 0 * c`
+    · simp [mul_zero]           -- Case `x = a * 0`
+    · rfl                        -- Case `x = 0`
+  · intro hx -- `x = 0 → x ∈ principal (0 : S)`
+    rw [hx]
+    simp only [principal, ofSet, LeftIdeal.ofSet, RightIdeal.ofSet]
+    right; left
+    use 0
+    simp
+
+lemma zero_is_minimal : isMinimal (principal (0 : S)) := by
+  constructor
+  · -- show `principal 0 ≠ ∅` by contradiction: coerce both sides to `Set` and use `principal_zero_eq`
+    intro h
+    -- i'm not exactly sure how this magical line works. chatgpt found it
+    have hset : ((principal (0 : S) : Set S) = (∅ : Set S)) := congrArg (fun (I : Ideal' S) => (I : Set S)) h
+    simp [principal_zero_eq] at hset
+  · intro J hJ_ne hJ_le --minimality
+    ext x
+    constructor
+    · intro hx
+      exact hJ_le hx
+    · intro hx
+      have : x ∈ (principal (0 : S) : Set S) := hx
+      rw [principal_zero_eq, Set.mem_singleton_iff] at this
+      subst x
+      rcases exists_mem_of_ne_empty hJ_ne with ⟨y, hy⟩
+      have h0 : y * 0 ∈ J := J.mul_right_mem hy -- y * 0 = 0 ∈ J, so 0 ∈ J
+
+      rwa [mul_zero] at h0
 
 end Ideal'
 
