@@ -185,8 +185,36 @@ lemma simple_iff_ideals (S : Type*) [Semigroup S] :
     · right
       obtain ⟨x, hx⟩ := Ideal'.nonempty_if_ne_emptyset I hI
       have incl : Ideal'.principal x ≤ I := by
-        simp_all only [SetLike.mem_coe]
-        sorry
+        intro y hy
+        simp [Ideal'.principal, Ideal'.ofSet_coe] at hy
+        obtain ⟨s, t, h⟩ := hy
+        simp_all only [SetLike.mem_coe, Set.mul_singleton, Set.image_univ, Set.mem_range, Set.mem_univ, true_and]
+        obtain ⟨w, h_2⟩ := t
+        obtain ⟨w_1, h⟩ := h
+        subst h h_2
+        simp_all only [Ideal'.mul_left_mem, Ideal'.mul_right_mem]
+        rename_i h_1
+        simp_all only [SetLike.mem_coe, LeftIdeal.ofSet_coe, Set.mul_singleton, Set.image_univ, Set.union_singleton,
+          Set.mem_insert_iff, Set.mem_range]
+        cases h_1 with
+        | inl h_2 =>
+          subst h_2
+          simp_all only
+        | inr h_3 =>
+          obtain ⟨w, h_1⟩ := h_3
+          subst h_1
+          simp_all only [Ideal'.mul_left_mem]
+        rename_i h_1
+        simp_all only [SetLike.mem_coe, RightIdeal.ofSet_coe, Set.singleton_mul, Set.image_univ, Set.union_singleton,
+          Set.mem_insert_iff, Set.mem_range]
+        cases h_1 with
+        | inl h_2 =>
+          subst h_2
+          simp_all only
+        | inr h_3 =>
+          obtain ⟨w, h_1⟩ := h_3
+          subst h_1
+          simp_all only [Ideal'.mul_right_mem]
       rw [h x] at incl
       apply le_antisymm; exact fun ⦃x⦄ a ↦ trivial
       exact incl
