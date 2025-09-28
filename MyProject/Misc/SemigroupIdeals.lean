@@ -202,7 +202,7 @@ instance : SetLike (Ideal' α) α :=
   ⟨Ideal'.carrier, fun p q h ↦ by cases p; cases q; congr!⟩
 
 @[simp] lemma mem_carrier {p : Ideal' α} {x : α}: x ∈ p.carrier ↔ x ∈ (p : Set α) := Iff.rfl
-
+@[simp] lemma coe_top : ((⊤ : Ideal' α) : Set α) = Set.univ := rfl
 /-- This allows us to use the `ext` tactic -/
 @[ext] theorem ext {p q : Ideal' α} (h : ∀ x, x ∈ p ↔ x ∈ q) : p = q := SetLike.ext h
 
@@ -435,22 +435,109 @@ lemma zero_is_minimal : isMinimal (principal (0 : S)) := by
 
       rwa [mul_zero] at h0
 
-end Ideal'
-
-
-/-! ### (TODO) Simple and Zero-Simple semigroups
-A Semigroup `S` is simple if its only ideals are `∅ and S`.
-If `S` has a zero element, it is zero-simple if its only ideals are `∅, {0}, and S`.
-Left/right simple semigroups are defined analogously. -/
-
-
 def isSimple (S : Type*) [Semigroup S] : Prop := ∀ (I : Ideal' S), I = ∅ ∨ I = ⊤
 
 def isZeroSimple (S : Type*) [SemigroupWithZero S] : Prop :=
-  ∀ (I : Ideal' S), I = ∅ ∨ I.carrier = {0} ∨ I = ⊤
+  (∃ a b : S, a * b ≠ 0) ∧ ∀ (I : Ideal' S), I = ∅ ∨ (I : Set S) = ({0} : Set S) ∨ I = ⊤
+end Ideal'
 
-/- Lemma: If `S` is 0-simple, then `S² = S`-/
+section zero_simple
 
-/- Lemma: `S` is simple ↔ `SsS = S` for every `s ∈ S`-/
+variable (S : Type*) [SemigroupWithZero S]
+
+/-- Notation for S² = { a * b | a b ∈ S }. -/
+def Ssq : Set S := (Set.univ : Set S) * (Set.univ : Set S)
+
+open Ideal'
+
+/-- 1) `S^2` is a two-sided ideal (placeholder). -/
+def Ssq_is_ideal : Ideal' S :=
+{ carrier := Ssq S,
+  mem_mul_mem := by
+    intro x hx y
+    -- unpack x ∈ Set.univ * Set.univ as x = a * b with a,b ∈ Set.univ
+    rcases Set.mem_mul.1 hx with ⟨a, ⟨ha, ⟨b, ⟨hb, rfl⟩⟩⟩⟩
+    -- show x * y ∈ Set.univ * Set.univ by giving witnesses `a` and `b * y`
+    use a
+    constructor
+    · simp [ha]  -- a ∈ Set.univ
+    use (b * y)
+    constructor
+    · simp
+    · rw [mul_assoc]
+
+  mul_mem_mem := by
+    intro x hx y
+    rcases Set.mem_mul.1 hx with ⟨a, ⟨ha, ⟨b, ⟨hb, rfl⟩⟩⟩⟩
+    use (y * a)
+    constructor; simp
+    use b
+    constructor; simp
+    change (y * a) * b = y * (a * b)
+    rw [mul_assoc]}
 
 
+lemma Ssq_ne_singleton_zero_0simple (h : isZeroSimple S) : (Ssq S : Set S) ≠ ({0} : Set S) := by
+  -- extract the existence of non-zero product from 0-simplicity
+  rcases h with ⟨⟨a, b, hab_ne⟩, _⟩
+
+  -- show a * b ∈ Ssq S
+  have hab_in_Ssq : a * b ∈ (Ssq S) := by
+    dsimp [Ssq]
+    exact ⟨a, ⟨Set.mem_univ a, ⟨b, ⟨Set.mem_univ b, rfl⟩⟩⟩⟩
+
+  -- if Ssq S = {0}, then a * b = 0, contradicting hab_ne
+  intro h_eq
+  rw [h_eq, Set.mem_singleton_iff] at hab_in_Ssq
+  exact hab_ne hab_in_Ssq
+
+
+theorem zero_simple_Ssq_eq_univ (h : isZeroSimple S) :
+  (Ssq S : Set S) = Set.univ := by
+  -- S^2 is an ideal
+  let I : Ideal' S := Ssq_is_ideal S
+
+  --  - prod_nonzero : ∃ a b, a * b ≠ 0 (equivalent to `S^2 ≠ {0}`)
+  --  - h_prop : ∀ I, I = ∅ ∨ (I : Set S) = {0} ∨ I = ⊤
+  rcases h with ⟨prod_nonzero, h_prop⟩
+  rcases prod_nonzero with ⟨a, b, hab_ne⟩
+  let s := a * b
+  have hs_ne : s ≠ (0 : S) := hab_ne -- extract s ∈ S^2, s ≠ 0
+
+  -- apply 0-simplicity to the ideal I
+  have hI := h_prop I
+  rcases hI with (heq_empty | heq_singleton | heq_top)
+
+  -- Case I = ∅
+  ·
+    -- push the ideal-equality to sets
+    apply_fun (fun (K : Ideal' S) => (K : Set S)) at heq_empty
+    have Ssq_eq_empty : (Ssq S) = (∅ : Set S) := (rfl : (I : Set S) = Ssq S).symm.trans heq_empty
+
+    -- show `s * 0 ∈ Ssq S` (Ssq is all products of two elements)
+    have s0_in_Ssq : (s * (0 : S)) ∈ (Ssq S) := by
+      dsimp [Ssq]
+      exact ⟨s, ⟨Set.mem_univ s, ⟨0, ⟨Set.mem_univ (0 : S), rfl⟩⟩⟩⟩
+
+    -- rewrite with `Ssq = ∅` to get contradiction
+    rw [Ssq_eq_empty] at s0_in_Ssq
+    simp at s0_in_Ssq
+
+  -- Case (I : Set S) = {0}
+  ·
+    -- reconstruct the isZeroSimple hypothesis
+    have h_reconstructed : isZeroSimple S := ⟨⟨a, b, hab_ne⟩, h_prop⟩
+    exact False.elim (Ssq_ne_singleton_zero_0simple S h_reconstructed heq_singleton)
+
+  -- Case I = ⊤ (what we want to show)
+  ·
+    -- push the equality `I = ⊤` to sets
+    apply_fun (fun (K : Ideal' S) => (K : Set S)) at heq_top
+    have Ssq_eq_univ : Ssq S = Set.univ :=
+      (rfl : (I : Set S) = Ssq S).symm.trans (by simp [heq_top])
+    exact Ssq_eq_univ
+
+
+
+
+end zero_simple
