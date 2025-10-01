@@ -361,3 +361,8 @@ noncomputable def HClass.Subgroup (he : IsIdempotentElem e) : Semigroup.Subgroup
 
 noncomputable instance HClass.Group (he : IsIdempotentElem e) :
     Group (HClass.Subgroup he) := by infer_instance
+
+/-- We give a new definitoin of Maximal group, this time using Mathlib's
+lattuce instances which we gain from out `SetLike (Subgroup S)` instance -/
+def Semigroup.Subgroup.isMaximal (G : Subgroup S) : Prop :=
+  ∀ (T : Subgroup S), G ≤ T → G = T
