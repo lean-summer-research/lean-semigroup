@@ -332,7 +332,121 @@ end Ideal'
 
 
 
-/-! ### (TODO) Quotients by Ideals -/
+
+/-! ### Quotients by Ideals
+- Should we use QUot or Quotient?
+- Prove that the quotient is a semigroup `{x : S // x = 0 ∨ ¬(x ∈ I)}`
+- Define the Surjective mul hom
+-/
+
+section Quotient
+
+variable {S : Type*} [Semigroup S]
+
+/-!
+#### Ree's Congruence
+We given an `I : Ideal S`, we can form a congruence on `S`, called the Ree's Congruence, where
+`a ~ b` if `a = b` or `a, b ∈ I`.
+-/
+
+def ReesCon (I : Ideal' S) (x y : S) : Prop := x = y ∨ (x ∈ I ∧ y ∈ I)
+
+lemma ReesCon.refl (I : Ideal' S) (x : S) : ReesCon I x x := Or.inl rfl
+
+lemma ReesCon.symm (I : Ideal' S) {x y : S} (h : ReesCon I x y) : ReesCon I y x := by
+  simp_all [ReesCon]
+  rcases h with (h | ⟨h₁, h₂⟩)
+  · subst x; simp
+  · right; exact ⟨h₂, h₁⟩
+
+lemma ReesCon.trans (I : Ideal' S) {x y z : S} (hxy : ReesCon I x y) (hyz : ReesCon I y z) :
+    ReesCon I x z := by
+  simp_all [ReesCon]
+  rcases hxy with (hxy | ⟨hxy₁, hxy₂⟩)
+  <;> rcases hyz with (hyz | ⟨hyz₁, hyz₂⟩)
+  · subst x; subst y; simp
+  · subst y; right; exact ⟨hyz₁, hyz₂⟩
+  · subst y; right; exact ⟨hxy₁, hxy₂⟩
+  · right; exact ⟨hxy₁, hyz₂⟩
+
+/-- The property that lifts it from setoid to congruence -/
+lemma ReesCon.mul' (I : Ideal' S) {w x y z : S} (hwx : ReesCon I w x) (hyz : ReesCon I y z) :
+    ReesCon I (w * y) (x * z) := by
+  simp_all [ReesCon]
+  rcases hwx with (hwx | ⟨hwx₁, hwx₂⟩)
+  <;> rcases hyz with (hyz | ⟨hyz₁, hyz₂⟩)
+  · subst x; subst y; left; rfl
+  · subst w; right; simp_all
+  · subst z; right; simp_all
+  · right; simp_all
+
+instance ReesCon.equiv (I : Ideal' S) : Equivalence (ReesCon I) where
+  refl := ReesCon.refl I
+  symm := ReesCon.symm I
+  trans := ReesCon.trans I
+
+instance ReesCon.Con (I : Ideal' S) : Con S where
+  r := ReesCon I
+  iseqv := ReesCon.equiv I
+  mul' (hwx) (hyz) := ReesCon.mul' I hwx hyz
+
+@[simp] lemma ReesCon.Con_def (I : Ideal' S) (x y : S) : (ReesCon.Con I) x y ↔ x = y ∨ (x ∈ I ∧ y ∈ I) := by rfl
+
+abbrev ReesCon.Quotient (I : Ideal' S) :=  (ReesCon.Con I).Quotient
+
+instance ReesCon.QuotSemigroup (I : Ideal' S) : Semigroup (ReesCon.Quotient I) :=
+  (ReesCon.Con I).semigroup
+
+/-- The semigroup cannonical homomorphism -/
+def ReesCon.mulHom (I : Ideal' S) : S →ₙ* (ReesCon.Quotient I) := (ReesCon.Con I).mkMulHom
+
+variable {M : Type*} [Monoid M]
+
+instance ReesCon.QuotMonoid (I : Ideal' M) : Monoid (ReesCon.Quotient I) :=
+  (ReesCon.Con I).monoid
+
+/-- The monoid cannonical homomorphism -/
+def ReesCon.monoidHom (I : Ideal' M) : M →* (ReesCon.Quotient I) := (ReesCon.Con I).mk'
+
+/-!
+#### Structure of quotients by Rees congruence
+We prove that, as long as `(I : Ideal S) ≠ ∅`, then the quotient semigroup is a
+`SemigroupWithZero`, where the zero element is the class of any element in `I`
+-/
+
+/-
+instance ReesCon.QuotZeroOfInhabited (I : Ideal' S) [Inhabited I] (hd : ↑(default : I) ∈ I) : Zero (ReesCon.Quotient I) where
+  zero := ReesCon.mulHom I ↑(default : I)
+
+lemma ReesCon.zeroDef (I : Ideal' S) [Inhabited I] {x : I} : (0 : Quotient I) = ⟦x⟧  := by
+  have hrep := Quotient.exists_rep (0 : Quotient I)
+  rcases hrep with ⟨y, hy⟩
+  rw [← hy]
+  rw [Quotient.eq]
+  simp
+
+
+/- ERror: failed to synthesize
+  OfNat (Quotient I) 0
+numerals are polymorphic in Lean, but the numeral `0` cannot be used in a context where the expected type is
+  Quotient I
+due to the absence of the instance above
+
+Additional diagnostic information may be available using the `set_option diagnostics true` command.-/
+instance ReesCon.QuotSemigroupWithZero (I : Ideal' S) {x : S} (hx : x ∈ I): SemigroupWithZero (ReesCon.Quotient I) where
+  zero := ReesCon.mulHom I x
+  zero_mul := by
+    intro a
+    have h : (Zero.zero : Quotient I) = ReesCon.mulHom I x := by rfl
+
+
+#check MulEquiv
+
+lemma ReesCon.zeroDef (I : Ideal' S) {x : S} (hx : x ∈ I) : (0 : ReesCon.Quotient I) = ↑x := by sorry
+-/
+end Quotient
+
+
 
 /-! ### (TODO) Minimal Ideals-/
 
