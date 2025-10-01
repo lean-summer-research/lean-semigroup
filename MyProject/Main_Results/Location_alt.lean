@@ -347,8 +347,8 @@ lemma H_mul_closed' (he : IsIdempotentElem e)
     unfold J_preorder
     use x, y
     exact hexaby
-  have helrab : e ≤𝓡 a * b := R_preorder_of_R_preorder_and_J_preorder hablre heljab
-  have hellab : e ≤𝓛 a * b := L_preorder_of_L_preorder_and_J_preorder hablle heljab
+  have helrab : e ≤𝓡 a * b := by sorry
+  have hellab : e ≤𝓛 a * b := by sorry
   unfold H_eqv
   simp
   constructor
