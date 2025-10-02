@@ -347,8 +347,8 @@ lemma H_mul_closed' (he : IsIdempotentElem e)
     unfold J_preorder
     use x, y
     exact hexaby
-  have helrab : e ≤𝓡 a * b := by sorry
-  have hellab : e ≤𝓛 a * b := by sorry
+  have helrab : e ≤𝓡 a * b := R_preorder_of_R_preorder_and_J_preorder hablre heljab
+  have hellab : e ≤𝓛 a * b := L_preorder_of_L_preorder_and_J_preorder hablle heljab
   unfold H_eqv
   simp
   constructor
@@ -617,7 +617,7 @@ lemma H_class_product_idempotent (a b : S)(ha : a 𝓗 b)(haab: a 𝓗 a * b) : 
 /- An 𝓗-class containing an idempotent is
 a Subsemigroup. (substitutes for instance semigroupOnH in code below) -/
 
-instance subsemigroupOnH {e : S}(he : IsIdempotentElem e): Subsemigroup S where
+def subsemigroupOnH {e : S}(he : IsIdempotentElem e): Subsemigroup S where
   carrier := (H_class_set e)
   mul_mem' := by
     intros ha hb hae hbe
@@ -641,7 +641,7 @@ class  monoidInSemigroup (S : Type*) [Semigroup S] where
 /-! An 𝓗-class containing an idempotent is
 a monoid in the semigroup. (substitutes for instance monoidOnH in code below). -/
 
-instance submonoidOnH {e : S}(he : IsIdempotentElem e): monoidInSemigroup S where
+def submonoidOnH {e : S}(he : IsIdempotentElem e): monoidInSemigroup S where
   carrier := (H_class_set e)
   mul_mem' := by
     intros ha hb hae hbe
@@ -675,7 +675,7 @@ class  groupInSemigroup (S : Type*) [Semigroup S] where
   left_inverse : ∀ a : carrier , a * (inv a) = id
   right_inverse : ∀ a : carrier , (inv a) * a  = id
 
-noncomputable instance subgroupOnH {e : S}(he : IsIdempotentElem e): groupInSemigroup S where
+noncomputable def subgroupOnH {e : S}(he : IsIdempotentElem e): groupInSemigroup S where
   carrier := (H_class_set e)
   mul_mem' := by
     intros ha hb hae hbe
@@ -717,7 +717,7 @@ def isSubsemigroup (T : Set S) := ∃ u : (Subsemigroup S), T = u.carrier
 
 /- A subsemigroup of S is itself a semigroup (note that the definition of subsemigroup in Mathlib does not require associativity!!)-/
 
-instance subsemigroupIsSemigroup (T: Set S)(is_ssg: isSubsemigroup T): Semigroup T where
+def subsemigroupIsSemigroup (T: Set S)(is_ssg: isSubsemigroup T): Semigroup T where
   mul := fun x y: T => ⟨ x.val * y.val , (by
   cases' is_ssg with u p
   have hx : x.val ∈ T := Subtype.coe_prop x
@@ -734,6 +734,16 @@ instance subsemigroupIsSemigroup (T: Set S)(is_ssg: isSubsemigroup T): Semigroup
 
 def is_H_class (X : Set S) := ∃ s : S, X = H_class_set s
 
+/- Add something similar for J, R and L classes -/
+def is_J_class  (X : Set S) := ∃ s : S, X = J_class_set s
+
+
+
+
+
+def is_R_class (X : Set S) := ∃ s : S, X = R_class_set s
+
+def is_L_class (X : Set S) := ∃ s : S, X = L_class_set s
 
 /- Another basic property of equivalence relations: If H is an H-class and it contains s then it's the H-class of s -/
 
@@ -762,13 +772,15 @@ X = H_class_set t := by
 /-! A Proposition asserting that a subset of
 S is a subgroup.-/
 
-def isSubgroup [Semigroup S](G : Set S) := ∃ u : (groupInSemigroup S), G = u.carrier
+def isSubgroup  (G : Set S) := ∃ u : (groupInSemigroup S), G = u.carrier
+
 
 /- Any two elements of a subgroup of a semigroup are H-related.-/
 
 lemma subgroup_elements_H_equiv (G : Set S)(a b : S)(hsubgrp : isSubgroup G): a ∈ G → b ∈ G → a 𝓗 b := by
   intro haing hbing
   cases' hsubgrp with u gcarrier
+
   rw [gcarrier] at haing hbing
 
   have haeqbc : a = b * (u.inv ⟨b, hbing⟩ ).val * a := calc
@@ -819,7 +831,7 @@ lemma subgroup_elements_H_equiv (G : Set S)(a b : S)(hsubgrp : isSubgroup G): a 
     exact ⟨halleb,hbllea⟩
   exact (H_eqv_iff_L_and_R a b).mpr ⟨ harb, halb⟩
 
-/- A restatement if subgroupOnH : An H-class containing an idempotent is a subgroup.-/
+/- A restatement of subgroupOnH : An H-class containing an idempotent is a subgroup.-/
 
 lemma H_class_with_idempotent_subgroup (H : Set S)
 (hishclass : is_H_class H)(hasid: ∃ e : S, e ∈ H ∧ IsIdempotentElem  e) : isSubgroup H
@@ -837,6 +849,7 @@ lemma H_class_with_idempotent_subgroup (H : Set S)
 /- A subgroup contains an idempotent. -/
 lemma subgroup_has_idempotent (G : Set S)(subgp : isSubgroup G) : ∃ e : S, e ∈ G ∧ IsIdempotentElem e
 := by
+
   cases' subgp with u p
   use u.id
   rw [p]
@@ -853,7 +866,7 @@ a maximal subgroup of S.-/
 
 def isMaximalSubgroup (G : Set S) := isSubgroup G ∧ ∀ G' : Set S, G ⊆ G' → isSubgroup G' → G = G'
 
-
+/- This is Corollary 1.7 in the Pin text -/
 theorem H_class_tfae
  (H : Set S)(ish : is_H_class H) : List.TFAE [∃ e : S, e ∈ H ∧ (IsIdempotentElem e), (∃ a b : S, a ∈ H ∧ b ∈ H ∧ a * b ∈ H),isMaximalSubgroup H ] := by
   tfae_have 1 → 2 := by
@@ -915,6 +928,231 @@ theorem H_class_tfae
     obtain ⟨e,p,q⟩ :=  subgroup_has_idempotent H hh
     use e
   tfae_finish
+
+/- These next theorems are devoted to reconciling 'groups in semigroups' with groups as already defined in the Math library.-/
+/- Map a subgroup to its underlying
+groupInSemigroup object and carrier set.-/
+
+noncomputable def subgroup_groupInSemigroup (G : Set S)(h :isSubgroup G):= Classical.choose h
+
+noncomputable def subgroup_groupInSemigroup_prop (G : Set S)(h :isSubgroup G) := Classical.choose_spec h
+
+#check subgroup_groupInSemigroup_prop
+
+/- A subgroup of a semigroup is closed under multiplication. -/
+
+lemma subgroup_mul_closed (G : Set S)(subgp: isSubgroup G ): a ∈ G → b ∈ G → a * b ∈ G := by
+  intro aing bing
+  cases'  subgp with u gcarrier
+  rw [gcarrier]
+  rw [gcarrier] at aing  bing
+  exact u.mul_mem' a b aing bing
+
+/- A subgroup of a semigroup is associative -/
+lemma subgroup_mul_assoc (G : Set S)(subgp: isSubgroup G )(a b c : G):  (a.val  *  b.val ) * c.val = a.val  * (b.val  * c.val) := by
+
+  cases'  subgp with u gcarrier
+  exact mul_assoc a.val  b.val  c.val
+
+/- A map sending a subgroup of a semigroup to its identity element-/
+
+noncomputable def id_of_subgroup( G : Set S)(subgp : isSubgroup G) : G := by
+    let u := subgroup_groupInSemigroup G subgp
+    have member : u.id ∈ G := by
+      have gcarrier : G = u.carrier :=  subgroup_groupInSemigroup_prop G subgp
+      rw [gcarrier]
+      exact u.id_in_sub
+    exact ⟨ u.id , member ⟩
+
+/- A map sending a subgroup and an element to
+the inverse of the element -/
+
+
+
+noncomputable def inv_of_subgroup( G : Set S)(subgp : isSubgroup G)(g :  G) : G := by
+    let u := subgroup_groupInSemigroup G subgp
+    let v := u.inv
+
+    have gcarrier : G = u.carrier :=  subgroup_groupInSemigroup_prop G subgp
+    have member : ↑ g ∈ u.carrier := by
+      rw [<-gcarrier]
+      exact Subtype.coe_prop g
+    rw [gcarrier]
+    exact   v ⟨↑ g, member ⟩
+
+
+
+
+lemma subgroup_left_cancel (G : Set S)
+(subgp: isSubgroup G )(a : G):   (inv_of_subgroup G subgp a ) *  a.val= (id_of_subgroup G subgp  ) := by
+  let w := (inv_of_subgroup G subgp a)
+  let u := subgroup_groupInSemigroup G subgp
+  have  h₂ : G = u.carrier := subgroup_groupInSemigroup_prop G subgp
+  have member : ↑ a ∈ u.carrier := by
+    rw [<-h₂]
+    exact Subtype.coe_prop a
+  have h₃ : w.val =  u.inv ⟨ ↑a , member ⟩ := by
+    sorry --how do we get over this bump?
+
+
+  have h : w.val  * a.val = u.id := by
+   rw [h₃]
+   apply u.right_inverse
+  exact h
+
+/- The idenity element of a subgroup is a right identity, followed by the dual statement-/
+lemma subgroup_one_right (G : Set S)
+(subgp: isSubgroup G )(a : G): a.val * (id_of_subgroup G subgp ) = a.val := by
+  let u := subgroup_groupInSemigroup G subgp
+  have h: a.val  * u.id = a  := by
+    apply u.id_right_one
+    have h₂ : G = u.carrier := subgroup_groupInSemigroup_prop G subgp
+    rw [<-h₂]
+    exact Subtype.coe_prop a
+  exact h
+
+lemma subgroup_one_left (G : Set S)
+(subgp: isSubgroup G )(a : G):   (id_of_subgroup G subgp ) *  a.val= a.val := by
+  let u := subgroup_groupInSemigroup G subgp
+  have h:  u.id * a.val = a   := by
+    apply u.id_left_one
+    have h₂ : G = u.carrier := subgroup_groupInSemigroup_prop G subgp
+    rw [<-h₂]
+    exact Subtype.coe_prop a
+  exact h
+
+/- A subgroup of a semigroup is a group! -/
+
+noncomputable def  group_of_subgroup (G : Set S)(subgp : isSubgroup G) : Group G where
+  mul :=  λ a b :G => ⟨ a.val * b.val,(by
+    have aing : a.val ∈ G := Subtype.coe_prop a
+    have bing : b.val ∈ G := Subtype.coe_prop b
+    exact subgroup_mul_closed G subgp aing bing)⟩
+  mul_assoc := by
+    intro a b c
+    apply Subtype.eq
+    exact  subgroup_mul_assoc G subgp a b c
+
+
+  one := id_of_subgroup G subgp
+
+  one_mul := by
+    intro x
+    have h := subgroup_one_left G subgp
+    rw [← Subtype.coe_inj]
+    exact h x
+
+  mul_one := by
+    intro x
+    have h := subgroup_one_right G subgp
+    rw [← Subtype.coe_inj]
+    exact h x
+
+  inv := inv_of_subgroup G subgp
+  inv_mul_cancel := by
+    intro x
+    have h:= subgroup_left_cancel G subgp x
+    rw [← Subtype.coe_inj]
+    exact h
+
+/- This should contain a tatement of Proposition 1.8, that the
+maximal subgroups within a D-class are isomorphic. We know the MulEquiv
+instance formulation which can be used to assert that a map is an instance of
+an isomorphism.  But how do we state that two groups are isomorphic?
+
+Prop 1.8 here (work on statement)
+
+### Regular semigroups
+-/
+
+def is_regular_element (s : S): Prop := ∃ t : S, s * t * s = s
+
+def is_regular_J_class (D : Set S )(isjclass : is_J_class D):Prop := ∀ s:S, s ∈ D → is_regular_element s
+
+/-The theorem below  is Proposition 1.9 from Pin. We need to
+prove a couple of preliminary lemmas about regular elements in
+R- and L- classes -/
+
+lemma regular_Rclass_idempotent (s : S ) : List.TFAE [
+    (∃ e : S, e ∈ R_class_set s ∧ IsIdempotentElem e),
+    ((∀ t : S, t ∈ R_class_set s → is_regular_element t)),
+     ((∃ t : S, t ∈ R_class_set s ∧  is_regular_element t))] := by
+tfae_have 1 → 2 := by
+  intro claim1
+  obtain ⟨ e, sRe, ideme⟩ := claim1
+  intro t sRt
+  have eRt : e 𝓡 t := sorry
+  have teqet : t = e * t := sorry
+  have eeqtu : ∃ u : S, e = t * u := sorry
+  obtain ⟨ u, etu ⟩ := eeqtu
+  unfold is_regular_element
+  use u * e
+  calc
+    t * (u * e) * t = (t * u) * (e * t) := sorry
+    _ = e * e * t := sorry
+    _ = t := sorry
+
+tfae_have 2 → 3 := by
+  intro claim2
+  use s
+  constructor
+  · unfold R_class_set
+    exact  R_equiv_iff_classes_equal.mpr rfl
+  · apply claim2
+    exact  R_equiv_iff_classes_equal.mpr rfl
+
+tfae_have 3 → 1 := by
+  intro claim3
+  obtain ⟨t,trs,regt⟩ := claim3
+  obtain ⟨ x , txt⟩ := regt
+  use t * x
+  constructor
+  · sorry
+  · sorry
+
+
+
+tfae_finish
+
+
+
+
+lemma regular_Lclass_idempotent (s : S ) : List.TFAE [(∃ e : S, e ∈ L_class_set s ∧ IsIdempotentElem e),((∀ t : S, t ∈ L_class_set s → is_regular_element t)), ((∃ t : S, t ∈ L_class_set s ∧  is_regular_element t))]  := sorry
+
+
+theorem regular_J_class_tfae
+ (D : Set S)(isj : is_J_class D) : List.TFAE [ is_regular_J_class D isj,
+  ∃ s : S, s ∈ D ∧ is_regular_element s,
+  (∀ s : S, s ∈ D →  (∃ e: S, e ∈ (R_class_set s)  ∧ IsIdempotentElem e)),
+   (∀ s : S, s ∈ D →  (∃ e: S, e ∈ (L_class_set s)  ∧ IsIdempotentElem e)),
+  (∃ s : S, s ∈ D ∧ IsIdempotentElem s),
+  (∃ x y : S, x ∈ D ∧ y ∈ D ∧ x * y ∈ D)] := by
+  tfae_have 1 → 2:= by
+    unfold is_regular_J_class
+    unfold is_J_class at isj
+    cases' isj with s Ds
+    intro univ
+    use ↑s
+    have s_in_D : ↑s ∈ D := by
+      unfold J_class_set at Ds
+      rw [Ds]
+      exact J_eqv_refl
+    have sreg : is_regular_element s := univ s s_in_D
+    exact ⟨ s_in_D, sreg⟩
+
+  tfae_have 2 → 3:= by
+    intro claim2 s Ds
+    obtain ⟨ t, Dt, regt⟩ := claim2
+    have sjt : s 𝓙 t := sorry
+    have s
+
+  tfae_have 3 → 4:= sorry
+  tfae_have 4 → 5:= sorry
+  tfae_have 5 → 6:= sorry
+  tfae_have 6 → 1:= sorry
+  tfae_finish
+
+
 
 
 /- Below this line is Soleil's work on the proposition  giving the equivalent characterizations
