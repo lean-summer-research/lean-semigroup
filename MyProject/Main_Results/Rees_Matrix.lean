@@ -1,4 +1,4 @@
-import MyProject.Main_Results.Location
+import MyProject.Main_Results.Location_alt
 import MyProject.Misc.SemigroupIdeals
 
 def ReesMatrix {I : Type} {G : Type} {J : Type} (P : J → I → G) := Option (I × G × J)
@@ -167,7 +167,7 @@ lemma Ideal'.nonempty_if_ne_emptyset {S : Type*} [Semigroup S]
       exact a
 
 lemma simple_iff_ideals (S : Type*) [Semigroup S] :
-  isSimple S ↔ ∀ a : S, Ideal'.principal a = ⊤ := by
+  Ideal'.isSimple S ↔ ∀ a : S, Ideal'.principal a = ⊤ := by
   apply Iff.intro
   · intro h a
     have h' := h (Ideal'.principal a)
@@ -220,9 +220,26 @@ lemma simple_iff_ideals (S : Type*) [Semigroup S] :
       exact incl
 
 
-lemma zero_simple_iff_ideals (S : Type*) [Semigroup S] [SemigroupWithZero S] :
-  isZeroSimple S ↔ (∃ a : S, a ≠ 0) ∧ ∀ a : S, a ≠ 0 → Ideal'.principal a = ⊤ := by
-  sorry
+lemma zero_simple_iff_ideals (S : Type*) [SemigroupWithZero S] :
+  Ideal'.isZeroSimple S ↔ (∃ a : S, a ≠ 0) ∧ ∀ a : S, a ≠ 0 → Ideal'.principal a = ⊤ := by
+    simp_all only [ne_eq]
+    apply Iff.intro
+    · intro a
+      apply And.intro
+      · cases a with
+        | intro h hI =>
+          obtain ⟨x, b⟩ := h
+          have hI := hI (Ideal'.principal x)
+          cases hI with
+          | inl hI =>
+            exact Exists.imp' (HMul.hMul x) (fun a a ↦ a) b
+          | inr hI => exact Exists.imp' (HMul.hMul x) (fun a a ↦ a) b
+      · intro a_1 a_2
+        sorry
+    · intro a
+      obtain ⟨left, right⟩ := a
+      obtain ⟨w, h⟩ := left
+      sorry
 
 /- notion of regular classes in semigroups-- there are a number of theorems
 about these we may or may not need/want to prove. For now just need them to
@@ -255,11 +272,25 @@ lemma regular_iff_J_regular (S : Type*) [Semigroup S] :
       simp
     exact h x x this
 
+lemma regular_semigroup.of_mul_equiv
+  {S T : Type*} [Semigroup S] [Semigroup T]
+  (e : S ≃* T) (hS : regular_semigroup S) :
+  regular_semigroup T := by
+    intro y
+    obtain ⟨x, rfl⟩ := e.surjective y
+    obtain ⟨s, hs⟩ := hS x
+    use e s
+    rw [← e.map_mul, ← e.map_mul, hs]
+
+ /- this is Theorem 3.2-/
+
+open ReesMatrixNonzero
+
  /- this is (part) of Theorem 3.2-/
  /-Using MulEquiv to indicate "semigroup isomorphism"-- to replace?--/
 
-theorem zero_simple_iff_rees [SemigroupWithZero S] [GroupWithZero G] :
-        isZeroSimple S ↔
+theorem zero_simple_iff_rees [Finite S] [SemigroupWithZero S] [GroupWithZero G] :
+        Ideal'.isZeroSimple S ↔
         ∃ (I J : Type)  (P : J → I → G) (iso : S ≃* ReesMatrix P),
         Nonempty I ∧ Nonempty J ∧ Nonempty G ∧ regular_semigroup S ∧
         (∃ a b : S, a * b ≠ 0) ∧
@@ -269,11 +300,81 @@ theorem zero_simple_iff_rees [SemigroupWithZero S] [GroupWithZero G] :
   apply Iff.intro
   · intro a
     sorry
-  · intro a
-    sorry
+  · intro ⟨I, neI, J, neJ, neG, regS, hab, P, iso, nzerorep⟩
+    rcases hab with ⟨a, b, hab⟩
+    have ha : a ≠ 0 := by
+      simp_all only [ne_eq]
+      apply Aesop.BuiltinRules.not_intro
+      intro a_1
+      subst a_1
+      simp_all only [zero_mul, not_true_eq_false]
+    have hb : b ≠ 0 := by
+      simp_all only [ne_eq]
+      apply Aesop.BuiltinRules.not_intro
+      intro a_1
+      subst a_1
+      simp_all only [mul_zero, not_true_eq_false]
+    unfold Ideal'.isZeroSimple
+    obtain ⟨i₁, g₁, j₁, ha⟩ := nzerorep a ha
+    obtain ⟨i₂, g₂, j₂, hb⟩ := nzerorep b hb
+    let a_nz : ReesMatrixNonzero P := (i₁, g₁, j₁)
+    let b_nz : ReesMatrixNonzero P := (i₂, g₂, j₂)
+    let J1 := J_class_set (a)
+    have ainJ : a ∈ J1 := by
+      simp_all only [ne_eq, J1]
+      unfold J_class_set; simp
+    have hJ : is_J_class J1 := by
+      simp_all only [ne_eq, J1]
+      apply Exists.intro
+      · rfl
+    have hjreg : is_regular_J_class J1 hJ := by
+      simp_all only [ne_eq, J1]
+      intro a ha
+      obtain ⟨s, hs⟩ := regS a
+      use s
+    have t := (regular_J_class_tfae J1) hJ
+    have t1 := t.out 0 2
+    have t2 := t.out 0 3
+    obtain ⟨x, hx⟩ := t1
+    obtain ⟨y, hy⟩ := t2
+    have xJ := x hjreg a ainJ ; obtain ⟨e1, hs⟩ := xJ
+    have yJ := y hjreg a ainJ ; obtain ⟨e2, ht⟩ := yJ
+    have he1 : e1 ≠ 0 := by sorry
+    have he2 : e2 ≠ 0 := by sorry
+    obtain ⟨i₃, g₃, r, he1⟩ := nzerorep e1 he1
+    obtain ⟨s, g₄, j₄, he2⟩ := nzerorep e2 he2
+    have P1 : P j₁ s ≠ 0 := by sorry
+    have P2 : P r i₁ ≠ 0 := by sorry
+    have: g₁ ≠ 0 := by sorry
+    have: g₂ ≠ 0 := by sorry
+    let A : ReesMatrix P := some (i₂, g₁⁻¹ * (P r i₁)⁻¹, r)
+    let B : ReesMatrix P := some (s, (P j₁ s)⁻¹ * g₂, j₂)
+    let mid : ReesMatrix P := some (i₁, g₁ * P j₁ s * ((P j₁ s)⁻¹  * g₂), j₂)
+    have h1 : (iso a) * B = mid := by rw[ha]; simp[B, mid]; rfl
+    have h2 : A * mid = some (i₂, g₂, j₂) := by
+      simp[A, mid]
+      set lhs := (g₁⁻¹ * (P r i₁)⁻¹) * P r i₁ * (g₁ * P j₁ s * ((P j₁ s)⁻¹ * g₂))
+      have lh : lhs = g₂ := by simp_all[lhs, mul_assoc]
+      rw [<-lh]; simp[<-mul_assoc]; simp[mul_assoc, mul_inv_cancel₀ P1]
+      let LH := ReesMatrix0.rees_mul P (some (i₂, g₁⁻¹ * (P r i₁)⁻¹, r)) (some (i₁, g₁ * lhs, j₂))
+      simp_all only [ne_eq, implies_true, exists_and_left, forall_const, imp_self, isUnit_iff_ne_zero,
+        not_false_eq_true, IsUnit.inv_mul_cancel_right, IsUnit.inv_mul_cancel_left, mid, C, B, lhs, A, J1, LH]
+      let lhs := ReesMatrix0.rees_mul P
+              (some (i₂, g₁⁻¹ * (P r i₁)⁻¹, r))
+              (some (i₁, g₁ * g₂, j₂))
+      sorry
+    have hAB : A * ((iso a) * B) = iso b := by simp[h1, h2, hb]
+    have : iso b ∈ Ideal'.ofSet ({iso a}) := by
+      simp[Ideal'.ofSet, Ideal'.ofSet_coe]
+      sorry
+    have : ⊤ = Ideal'.ofSet ({iso a}) := by sorry
+    refine And.symm ⟨?_, ?_⟩
+    · sorry
+    have : ∃ a b : S, a * b ≠ 0 := by use a; use b
+    exact this
 
 theorem simple_iff_rees [Semigroup S] [Group G] :
-        isSimple S ↔
+        Ideal'.isSimple S ↔
         ∃ (I J : Type) (P : J → I → G) (iso : S ≃* ReesMatrixNonzero P),
         Nonempty I ∧ Nonempty J ∧ Nonempty G ∧ regular_semigroup S ∧
         (∀ a : S, ∃ (i : I) (g : G) (j : J),
