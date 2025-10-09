@@ -26,8 +26,8 @@ instance : EmptyCollection (LeftIdeal α) where
 
 instance : Top (LeftIdeal α) where
   top := {
-      carrier := ∅
-      mul_mem_mem := by simp}
+      carrier := Set.univ
+      mul_mem_mem := by simp_all}
 
 /--`SetLike` instance requires we prove that there is an injection from `LeftIdeal → Set`.
 It regesters a coersion to `Set` and provides various simp lemmas and instances-/
@@ -465,6 +465,8 @@ def isZeroMinimal [MulZeroClass α] (I : Ideal' α) : Prop :=
 /- We prove that a semigroup has at most one minimal ideal
 Because`I ∩ J = ∅` and is an ideal contained in both,
 minimality implies `I = I ∩ J` and `J = I ∩ J`, so `I = J` -/
+
+-- if an ideal is non-empty, it has an element
 lemma exists_mem_of_ne_empty {I : Ideal' α} (h : I ≠ ∅) : ∃ x, x ∈ I := by
   -- turn `I ≠ ∅` (as an `Ideal'`) into `(I : Set α) ≠ ∅`
   have hset : (I : Set α) ≠ ∅ := by
@@ -503,12 +505,67 @@ theorem minimal_ideal_unique (I J : Ideal' α) (hI : isMinimal I) (hJ : isMinima
   -- compose to get I = J
   exact HI.trans HJ.symm
 
+variable {S : Type*} [Semigroup S]
 
-/- TODO: Lemma; Every finite semigroup has a unique minimal ideal -/
+theorem finite_semigroup_has_minimal_ideal [Finite S] [Nonempty S] :
+    ∃ (I : Ideal' S), I.isMinimal := by
+  -- Pick any starting element
+  obtain ⟨s⟩ := ‹Nonempty S›
 
-/- Lemma: If `S` has a zero `0`, then `{0}` is a minimal ideal -/
+  -- The set of all nonempty ideals
+  let P : Set (Ideal' S) := {I | I ≠ ∅}
+
+  -- principal s is nonempty, so P is nonempty
+  have hP : P.Nonempty := by
+    use principal s
+    intro h
+    have : s ∈ (principal s : Set S) := by
+      simp [principal, Ideal'.ofSet_coe, LeftIdeal.ofSet_coe, RightIdeal.ofSet_coe]
+    have : (principal s : Set S) = ∅ := SetLike.coe_set_eq.mpr h
+    rw [this] at this
+    rename_i this_1
+    simp_all only [SetLike.mem_coe]
+    exact this_1
+
+  -- Since S is finite, Ideal' S is finite
+  -- (the coercion to Set S is injective)
+  have : Finite (Ideal' S) := by
+    have : Finite (Set S) := inferInstance
+    exact Finite.of_injective (fun I : Ideal' S => (I : Set S)) SetLike.coe_injective
+
+  -- So P is a finite nonempty set
+  have hPfin : P.Finite := Set.toFinite P
+
+  -- Any finite nonempty set of ideals (ordered by ⊆) has a minimal element
+  -- We use the fact that we can't have an infinite strictly decreasing sequence
+  obtain ⟨I, hI_in, hI_min⟩ := Set.Finite.exists_minimal_wrt
+    (fun I : Ideal' S => (I : Set S)) P hPfin hP
+
+  -- I is our minimal ideal
+  use I
+  constructor
+  · exact hI_in
+  · intro J hJ_ne hJ_le
+    -- If J ≠ ∅ and J ≤ I, we need J = I
+    have hJ_in : J ∈ P := hJ_ne
+    -- hI_min says: if J ∈ P and (J : Set S) ⊆ (I : Set S), then (J : Set S) = (I : Set S)
+    have : (I : Set S) = (J : Set S) := hI_min J hJ_in (SetLike.coe_subset_coe.mpr hJ_le)
+    exact SetLike.coe_injective this.symm
+
+-- Every finite semigroup has a unique minimal ideal
+theorem finite_semigroup_unique_minimal_ideal [Finite S] [Nonempty S]:
+    ∃! (I : Ideal' S), I.isMinimal := by
+  -- existence
+  obtain ⟨I, hI⟩ := @finite_semigroup_has_minimal_ideal S _ _ _
+
+  -- uniqueness
+  use I, hI
+  intros J hJ
+  exact (minimal_ideal_unique I J hI hJ).symm
+
+section with_zero
 variable {S : Type*} [SemigroupWithZero S]
-
+/- Lemma: If `S` has a zero `0`, then `{0}` is a minimal ideal -/
 lemma principal_zero_eq : (principal (0 : S) : Set S) = {0} := by
   ext x -- tactic that reduces to proving `A=B` (as sets) to `x ∈ A ↔ x ∈ B`
   simp only [Set.mem_singleton_iff] -- replaces `x ∈ {0}` with `x=0`
@@ -548,6 +605,8 @@ lemma zero_is_minimal : isMinimal (principal (0 : S)) := by
       have h0 : y * 0 ∈ J := J.mul_right_mem hy -- y * 0 = 0 ∈ J, so 0 ∈ J
 
       rwa [mul_zero] at h0
+
+end with_zero
 
 def isSimple (S : Type*) [Semigroup S] : Prop := ∀ (I : Ideal' S), I = ∅ ∨ I = ⊤
 
@@ -650,8 +709,5 @@ theorem zero_simple_Ssq_eq_univ (h : isZeroSimple S) :
     have Ssq_eq_univ : Ssq S = Set.univ :=
       (rfl : (I : Set S) = Ssq S).symm.trans (by simp [heq_top])
     exact Ssq_eq_univ
-
-
-
 
 end zero_simple
