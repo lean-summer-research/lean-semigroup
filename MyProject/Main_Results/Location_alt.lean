@@ -347,8 +347,8 @@ lemma H_mul_closed' (he : IsIdempotentElem e)
     unfold J_preorder
     use x, y
     exact hexaby
-  have helrab : e ≤𝓡 a * b := R_preorder_of_R_preorder_and_J_preorder hablre heljab
-  have hellab : e ≤𝓛 a * b := L_preorder_of_L_preorder_and_J_preorder hablle heljab
+  have helrab : e ≤𝓡 a * b := sorry /-R_preorder_of_R_preorder_and_J_preorder hablre heljab-/
+  have hellab : e ≤𝓛 a * b := sorry /-L_preorder_of_L_preorder_and_J_preorder hablle heljab-/
   unfold H_eqv
   simp
   constructor
@@ -1145,6 +1145,7 @@ theorem regular_J_class_tfae
     obtain ⟨ t, Dt, regt⟩ := claim2
     have sjt : s 𝓙 t := sorry
     have s
+    sorry
 
   tfae_have 3 → 4:= sorry
   tfae_have 4 → 5:= sorry
