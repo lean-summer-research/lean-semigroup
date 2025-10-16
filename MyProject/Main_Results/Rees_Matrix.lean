@@ -219,8 +219,130 @@ lemma simple_iff_ideals (S : Type*) [Semigroup S] :
       apply le_antisymm; exact fun ⦃x⦄ a ↦ trivial
       exact incl
 
-
 lemma zero_simple_iff_ideals (S : Type*) [SemigroupWithZero S] :
+  Ideal'.isZeroSimple S ↔ (∃ a b : S, a * b ≠ 0) ∧ ∀ a : S, a ≠ 0 → Ideal'.principal a = ⊤ := by
+  constructor
+  -- forward: isZeroSimple → (∃ a b, a*b ≠ 0) ∧ (∀ nonzero a, principal a = ⊤)
+  · intro h
+    -- isZeroSimple gives two witnesses with a nonzero product and the "all ideals are ∅, {0}, ⊤" property
+    obtain ⟨⟨a, b, hab⟩, h_ideals⟩ := h
+    constructor
+    · use a, b -- we proved a nonzero product exists
+    · intro x hx
+      -- we show that (x) generateds the whole semigroup
+      -- `cases : Ideal'.principal x = ∅ ∨ ↑(Ideal'.principal x) = {0} ∨ Ideal'.principal x = ⊤`
+      have cases := h_ideals (Ideal'.principal x)
+
+      -- first split `I = ∅ ∨ ↑I = {0} ∨ I = ⊤` into two steps
+      cases cases with
+      | inl h_empty =>
+        -- principal x = ∅, contradiction b/c x ∈ principal x
+        have x_in : x ∈ (Ideal'.principal x : Set S) := by
+          simp [Ideal'.principal, Ideal'.ofSet_coe, LeftIdeal.ofSet_coe, RightIdeal.ofSet_coe]
+        -- coerce the Ideal' equality to a Set equality then rewrite
+        have set_eq : (Ideal'.principal x : Set S) = ∅ := congrArg (fun (I : Ideal' S) => (I : Set S)) h_empty
+        rw [set_eq] at x_in
+        simp at x_in
+
+      | inr rest =>
+        -- now rest : ↑(Ideal'.principal x) = {0} ∨ Ideal'.principal x = ⊤
+        cases rest with
+        | inl h_singleton =>
+          -- ↑(principal x) = {0}. Again impossible b/c x ≠ 0
+          have x_in : x ∈ (Ideal'.principal x : Set S) := by
+            simp [Ideal'.principal, Ideal'.ofSet_coe, LeftIdeal.ofSet_coe, RightIdeal.ofSet_coe]
+          rw [h_singleton] at x_in
+          simp at x_in
+          contradiction
+        | inr h_top =>
+          -- principal x = ⊤, done
+          exact h_top
+
+
+  -- reverse: (∃ a b, a*b ≠ 0) ∧ (∀ nonzero a, principal a = ⊤) → isZeroSimple
+  · intro ⟨⟨a, b, hab⟩, h_all_principal⟩
+    constructor
+    · -- provide the witness ∃ a b, a*b ≠ 0
+      use a, b, hab
+    · -- show: every ideal I is ∅ or {0} or ⊤
+      intro I
+      -- if I = ∅, we are done
+      by_cases hI : I = ∅
+      · left; exact hI
+
+      -- if I ≠ ∅, we can pick x ∈ I
+      have ⟨x, hx⟩ := Ideal'.exists_mem_of_ne_empty hI
+
+      -- two cases: x = 0 or x ≠ 0
+      by_cases hx_zero : x = 0
+      · by_cases h_single : (I : Set S) = {0}
+        · right; left; exact h_single -- if I = {0}, we're done
+        · -- otherwise, we can pick a nonzero element y
+          have : ∃ y, y ∈ I ∧ y ≠ 0 := by
+            by_contra H
+            -- H : ¬ ∃ y, y ∈ I ∧ y ≠ 0
+            -- so ∀ y, y ∈ I → y = 0
+            have subset : (I : Set S) ⊆ {0} := by
+              intro z hz
+              by_contra hzne
+              apply H
+              use z
+              constructor; assumption; exact hzne
+            -- show {0} ⊆ I because I is nonempty, so 0 ∈ I (we find a z ∈ I and show z * 0 ∈ I)
+            obtain ⟨z, hz⟩ := Ideal'.exists_mem_of_ne_empty hI
+            have zero_in : (0 : S) ∈ I := by
+              -- z * 0 ∈ I and z * 0 = 0
+              have : z * 0 ∈ I := I.mul_right_mem hz
+              simpa using this
+            have ssubset : {0} ⊆ (I : Set S) := by --this is the reverse inclusion
+              intro a ha
+              simp [Set.mem_singleton_iff] at ha
+              subst a; exact zero_in
+            have eq : (I : Set S) = ({0} : Set S) := by
+              ext a
+              constructor
+              · intro ha
+                apply subset
+                exact ha
+              · intro ha
+                apply ssubset
+                exact ha
+            -- contradiction with `h_single : ¬ ((I : Set S) = {0})`
+            contradiction
+          -- obtain witness and finish: principal y = ⊤ and principal y ≤ I ⇒ I = ⊤
+          obtain ⟨y, hy_in, hy_ne⟩ := this
+          have hy_top : Ideal'.principal y = ⊤ := h_all_principal y hy_ne
+          have : Ideal'.principal y ≤ I := Ideal'.ofSet_minimal (Set.singleton_subset_iff.mpr hy_in)
+          subst hx_zero
+          simp_all only [ne_eq, not_false_eq_true, false_or]
+          ext x : 1
+          apply Iff.intro
+          · intro a_1
+            apply SetLike.mem_of_subset
+            · simp_all only [Ideal'.coe_top, Set.subset_univ]
+            · exact a_1
+          · intro a_1
+            apply this
+            simp_all only
+
+      · -- subcase x ≠ 0. Then principal x = ⊤ by hypothesis, and sice (x) ≤ I, done
+        right; right
+        have hx_top : Ideal'.principal x = ⊤ := h_all_principal x hx_zero
+        have : Ideal'.principal x ≤ I := Ideal'.ofSet_minimal (Set.singleton_subset_iff.mpr hx)
+        simp_all only [ne_eq, not_false_eq_true]
+        ext x_1 : 1
+        apply Iff.intro
+        · intro a_1
+          apply SetLike.mem_of_subset
+          · simp_all only [Ideal'.coe_top, Set.subset_univ]
+          · exact a_1
+        · intro a_1
+          apply this
+          simp_all only
+
+
+
+lemma zero_simple_iff_ideals2 (S : Type*) [SemigroupWithZero S] :
   Ideal'.isZeroSimple S ↔ (∃ a : S, a ≠ 0) ∧ ∀ a : S, a ≠ 0 → Ideal'.principal a = ⊤ := by
     simp_all only [ne_eq]
     apply Iff.intro

@@ -1143,8 +1143,8 @@ theorem regular_J_class_tfae
   tfae_have 2 → 3:= by
     intro claim2 s Ds
     obtain ⟨ t, Dt, regt⟩ := claim2
-    have sjt : s 𝓙 t := sorry
-    have s
+    have sjt : s 𝓙 t := by
+      sorry
     sorry
 
   tfae_have 3 → 4:= sorry
