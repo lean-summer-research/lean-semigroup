@@ -9,6 +9,7 @@ namespace ReesMatrix0
 variable {G : Type } {I : Type } {J : Type } (P : J → I → G) [Nonempty I] [Nonempty J]
   [GroupWithZero G]
 
+
 instance ReesMul : Mul (ReesMatrix P) where
   mul a b :=
     match a, b with
@@ -42,46 +43,31 @@ instance {P : J → I → G} : MulZeroClass (ReesMatrix P) where
     | some _ => rfl
 --/
 
+@[simp] lemma rees_mul_none_left (x : ReesMatrix P) :
+    rees_mul P none x = none := rfl
+
+@[simp] lemma rees_mul_none_right (x : ReesMatrix P) :
+    rees_mul P x none = none := by
+  cases x <;> rfl
+
+@[simp] lemma rees_mul_some_some
+    {i₁ i₂ : I} {j₁ j₂ : J} {g₁ g₂ : G} :
+    rees_mul P (some (i₁, g₁, j₁)) (some (i₂, g₂, j₂))
+      = some (i₁, g₁ * P j₁ i₂ * g₂, j₂) := rfl
+
+@[simp] lemma rees_mul_eq_mul (a b : ReesMatrix P) :
+    rees_mul P a b = a * b := rfl
+
+lemma mul_eq_rees_mul (a b : ReesMatrix P) :
+    a * b = rees_mul P a b := rfl
+
 instance (P : J → I → G) : Semigroup (ReesMatrix P) where
   mul := Mul.mul
   mul_assoc := by
-    intros a b c
-    cases a with
-    | none => rfl
-    | some aval =>
-      cases b with
-      | none => rfl
-      | some bval =>
-        cases c with
-        | none =>
-          let h1 := rees_mul P (some aval) (some bval)
-          have h2 : rees_mul P h1 none = none := by rfl
-          exact h2
-        | some cval =>
-          let aval' : ReesMatrix P := some aval
-          let bval' : ReesMatrix P := some bval
-          let cval' : ReesMatrix P := some cval
-          rcases aval with ⟨i₁, g₁, j₁⟩
-          rcases bval with ⟨i₂, g₂, j₂⟩
-          rcases cval with ⟨i₃, g₃, j₃⟩
-          let mid₁ := P j₁ i₂
-          let mid₂ := P j₂ i₃
-          have hab : aval' * bval' = some (i₁, g₁ * mid₁ * g₂, j₂) := by
-            rfl
-          have hbc : bval' * cval' = some (i₂, g₂ * mid₂ * g₃, j₃) := by
-            rfl
-          have ha_bc : aval' * (bval' * cval') = some (i₁, g₁ * mid₁ * (g₂ * mid₂ * g₃), j₃) := by
-            simp_all only [mid₁, mid₂, aval', bval', cval']
-            rfl
-          have hab_c : aval' * bval' * cval' = some (i₁, (g₁ * mid₁ * g₂) * mid₂ * g₃, j₃) := by
-            simp_all only [cval', aval', mid₂, mid₁, bval']
-            rfl
-          have heq : (g₁ * mid₁ * g₂) * mid₂ * g₃ = g₁ * mid₁ * (g₂ * mid₂ * g₃) := by
-            simp[mul_assoc]
-          have hfinal : aval' * bval' * cval' = aval' * (bval' * cval') := by
-            simp_all only [ha_bc, hab_c, heq]
-          unfold aval' bval' cval' at hfinal
-          exact hfinal
+    intro a b c
+    cases a <;> cases b <;> cases c <;>
+      simp [ReesMatrix0.rees_mul, ReesMatrix0.mul_eq_rees_mul, mul_assoc]
+
 
 lemma R_equiv_iff_same_i {a b : ReesMatrix P} :
     a 𝓡 b ↔
@@ -143,6 +129,12 @@ def rees_mul_nz (a b : ReesMatrixNonzero P) : ReesMatrixNonzero P :=
   | (i₁, g₁, j₁), (i₂, g₂, j₂) =>
       (i₁, g₁ * P j₁ i₂ * g₂, j₂)
 
+/-- If you ever need the explicit `some` form, this is the projections version. -/
+@[simp] lemma coe_mul_as_some (a b : ReesMatrixNonzero P) :
+    ((a * b : ReesMatrixNonzero P) : ReesMatrix P)
+      = some (a.1, a.2.1 * P a.2.2 b.1 * b.2.1, b.2.2) := by
+  cases a <;> cases b <;> rfl
+
 instance : Semigroup (ReesMatrixNonzero P) where
   mul_assoc := by
     intros a' b' c'
@@ -169,12 +161,9 @@ of the 0 and nonzero containing RMs to align-- rewrite rees_mul in terms of
 
 theorem coe_mul (a b : ReesMatrixNonzero P) [GroupWithZero G]:
     (a * b : ReesMatrix P) = ReesMatrix0.rees_mul P (↑a) (↑b) := by
-  let a' : ReesMatrixNonzero P := a
-  let b' : ReesMatrixNonzero P := b
-  rcases a with ⟨i₁, g₁, j₁⟩
-  rcases b with ⟨i₂, g₂, j₂⟩
-  simp [ReesMatrix0.rees_mul]
-  rfl
+  rcases a with ⟨i₁,g₁,j₁⟩
+  rcases b with ⟨i₂,g₂,j₂⟩
+  simp [ReesMatrix0.rees_mul, ReesMatrixNonzero.rees_mul_nz]; rfl
 
 end ReesMatrixNonzero
 
@@ -376,6 +365,29 @@ lemma zero_simple_iff_ideals (S : Type*) [SemigroupWithZero S] :
           apply this
           simp_all only
 
+
+
+lemma zero_simple_iff_ideals2 (S : Type*) [SemigroupWithZero S] :
+  Ideal'.isZeroSimple S ↔ (∃ a : S, a ≠ 0) ∧ ∀ a : S, a ≠ 0 → Ideal'.principal a = ⊤ := by
+    simp_all only [ne_eq]
+    apply Iff.intro
+    · intro a
+      apply And.intro
+      · cases a with
+        | intro h hI =>
+          obtain ⟨x, b⟩ := h
+          have hI := hI (Ideal'.principal x)
+          cases hI with
+          | inl hI =>
+            exact Exists.imp' (HMul.hMul x) (fun a a ↦ a) b
+          | inr hI => exact Exists.imp' (HMul.hMul x) (fun a a ↦ a) b
+      · intro a_1 a_2
+        sorry
+    · intro a
+      obtain ⟨left, right⟩ := a
+      obtain ⟨w, h⟩ := left
+      sorry
+
 /- notion of regular classes in semigroups-- there are a number of theorems
 about these we may or may not need/want to prove. For now just need them to
 state Theorem 3.2 --/
@@ -506,9 +518,7 @@ theorem zero_simple_iff_rees [Finite S] :
         have xJ := x hjreg a ainJ ; obtain ⟨e1, hs⟩ := xJ
         have yJ := y hjreg a ainJ ; obtain ⟨e2, ht⟩ := yJ
         have he1 : e1 ≠ 0 := by
-          have := hs.2;
-          intro h; rw [h] at hs
-          apply?
+          have := hs.2; sorry -- this is an idempotent in a nonempty J class, should follow nonzero
         have he2 : e2 ≠ 0 := by
           have := ht.2; sorry -- this is an idempotent in a nonempty J class, should follow nonzero
         obtain ⟨i₃, g₃, r, he1⟩ := nzerorep e1 he1
