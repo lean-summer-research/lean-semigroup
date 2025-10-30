@@ -83,6 +83,46 @@ instance (P : J → I → G) : Semigroup (ReesMatrix P) where
           unfold aval' bval' cval' at hfinal
           exact hfinal
 
+lemma R_equiv_iff_same_i {a b : ReesMatrix P} :
+    a 𝓡 b ↔
+    match a, b with
+    | some a', some b' => a'.1 = b'.1
+    | _, _ => false := by
+      simp_all only [Bool.false_eq_true]
+      apply Iff.intro
+      · intro a_1
+        split
+        next a b a' b' =>
+          obtain ⟨fst, snd⟩ := a'
+          obtain ⟨fst_1, snd_1⟩ := b'
+          obtain ⟨fst_2, snd⟩ := snd
+          obtain ⟨fst_3, snd_1⟩ := snd_1
+          simp_all only
+          sorry
+        next a_2 b_1 x =>
+          simp_all only [imp_false, Prod.forall]
+          by_cases a = none
+          by_cases b = none
+          · have : a * b = none := by
+              rename_i h h_1
+              subst h_1 h
+              simp_all only [R_eqv_refl, reduceCtorEq, not_false_eq_true, implies_true]
+              rfl
+            sorry
+      · intro a_1
+        split at a_1
+        next a b a' b' =>
+          obtain ⟨fst, snd⟩ := a'
+          obtain ⟨fst_1, snd_1⟩ := b'
+          obtain ⟨fst_2, snd⟩ := snd
+          obtain ⟨fst_3, snd_1⟩ := snd_1
+          subst a_1
+          simp_all only
+          sorry
+        next a_2 b_1 x => simp_all only [implies_true]
+
+
+
 end ReesMatrix0
 
 namespace ReesMatrixNonzero
@@ -138,13 +178,9 @@ theorem coe_mul (a b : ReesMatrixNonzero P) [GroupWithZero G]:
 
 end ReesMatrixNonzero
 
-section ReesMatrixTheorems
-variable {G : Type } {I : Type } {J : Type } (P : J → I → G) [Nonempty I] [Nonempty J]
-  [GroupWithZero G]
-
-/- the following are skeletons for proofs of theorems about the Rees matrix semigroup-/
-
-variable {S : Type*} [Semigroup S]
+section ReesMatrixPreamble
+variable {G : Type } {I : Type } {J : Type } {S : Type*} (P : J → I → G) [Nonempty I] [Nonempty J]
+  [GroupWithZero G][Semigroup S]
 
 /- Prop 3.1 (about simple/zero simple)-- to delete? may fit better
 be covered in SemigroupIdeals file-/
@@ -358,10 +394,23 @@ def all_J_classes_regular (S : Type*) [Semigroup S] := ∀ x : S, J_class_regula
 
 def regular_semigroup (S : Type*) [Semigroup S] := ∀ x : S, is_regular x
 
-abbrev zero_regular_semigroup (S : Type*) [SemigroupWithZero S] :=
+@[simp] abbrev zero_regular_semigroup (S : Type*) [SemigroupWithZero S] :=
   regular_semigroup S
 
 lemma regular_iff_J_regular (S : Type*) [Semigroup S] :
+  regular_semigroup S ↔ all_J_classes_regular S := by
+  apply Iff.intro
+  · intro a
+    exact fun x a_1 a_2 ↦ a a_1
+  · intro h x
+    have hx := h x
+    unfold J_class_regular at hx
+    have : x ∈ J_class_set x := by
+      unfold J_class_set
+      simp
+    exact h x x this
+
+lemma zero_regular_iff_J_regular (S : Type*) [SemigroupWithZero S] :
   regular_semigroup S ↔ all_J_classes_regular S := by
   apply Iff.intro
   · intro a
@@ -384,19 +433,42 @@ lemma regular_semigroup.of_mul_equiv
     use e s
     rw [← e.map_mul, ← e.map_mul, hs]
 
+lemma zero_regular_semigroup.of_mul_equiv
+  {S T : Type*} [SemigroupWithZero S] [SemigroupWithZero T]
+  (e : S ≃* T) (hS : regular_semigroup S) :
+  regular_semigroup T := by
+    intro y
+    obtain ⟨x, rfl⟩ := e.surjective y
+    obtain ⟨s, hs⟩ := hS x
+    use e s
+    rw [← e.map_mul, ← e.map_mul, hs]
+
  /- this is Theorem 3.2-/
 
 open ReesMatrixNonzero
 attribute [simp] mul_inv_cancel₀ inv_mul_cancel₀
 
+@[simp] lemma hmul_eq {S : Type*} [SemigroupWithZero S]:
+  @HMul.hMul S S S (@instHMul S MulZeroClass.toMul) =
+  @HMul.hMul S S S (@instHMul S Semigroup.toMul) :=
+by ext; rfl
 
- /- this is (part) of Theorem 3.2-/
- /-Using MulEquiv to indicate "semigroup isomorphism"-- to replace?--/
+lemma semigroupWithZero_hmul_eq {S : Type*} [SemigroupWithZero S] :
+    @HMul.hMul S S S (@instHMul S SemigroupWithZero.toSemigroup.toMul) =
+    @HMul.hMul S S S (@instHMul S SemigroupWithZero.toMulZeroClass.toMul) :=
+by ext; rfl
 
-theorem zero_simple_iff_rees [Finite S] [SemigroupWithZero S] [GroupWithZero G] :
+end ReesMatrixPreamble
+
+section ReesMatrixTheorems
+variable {G : Type } {I : Type } {J : Type } {S : Type} (P : J → I → G) [Nonempty I] [Nonempty J]
+  [GroupWithZero G] [SemigroupWithZero S]
+
+
+theorem zero_simple_iff_rees [Finite S] :
         Ideal'.isZeroSimple S ↔
         ∃ (I J : Type)  (P : J → I → G) (iso : S ≃* ReesMatrix P),
-        Nonempty I ∧ Nonempty J ∧ Nonempty G ∧ regular_semigroup S ∧
+        Nonempty I ∧ Nonempty J ∧ Nonempty G ∧ (∀ x : S, is_regular x) ∧
         (∃ a b : S, a * b ≠ 0) ∧
         (∀ a : S, a ≠ 0 → ∃ (i : I) (g : G) (j : J),
         iso a = (some (i, g, j) : ReesMatrix P)) := by
@@ -434,7 +506,9 @@ theorem zero_simple_iff_rees [Finite S] [SemigroupWithZero S] [GroupWithZero G] 
         have xJ := x hjreg a ainJ ; obtain ⟨e1, hs⟩ := xJ
         have yJ := y hjreg a ainJ ; obtain ⟨e2, ht⟩ := yJ
         have he1 : e1 ≠ 0 := by
-          have := hs.2; sorry -- this is an idempotent in a nonempty J class, should follow nonzero
+          have := hs.2;
+          intro h; rw [h] at hs
+          apply?
         have he2 : e2 ≠ 0 := by
           have := ht.2; sorry -- this is an idempotent in a nonempty J class, should follow nonzero
         obtain ⟨i₃, g₃, r, he1⟩ := nzerorep e1 he1
@@ -469,7 +543,9 @@ theorem zero_simple_iff_rees [Finite S] [SemigroupWithZero S] [GroupWithZero G] 
             obtain ⟨i₂, g₂, j₂, hd⟩ := nzerorep (iso.symm d) (hd0)
             have P1 : P j₁ s ≠ 0 := by sorry
             have P2 : P r i₁ ≠ 0 := by sorry
-            have: g₁ ≠ 0 := by sorry -- this is g for iso a, where a is nonzero
+            have: g₁ ≠ 0 := by
+              have : some (i₁, g₁, j₁) ≠ none := by simp
+              sorry
             let A : ReesMatrix P := some (i₂, g₁⁻¹ * (P r i₁)⁻¹, r)
             let B : ReesMatrix P := some (s, (P j₁ s)⁻¹ * g₂, j₂)
             let mid : ReesMatrix P := some (i₁, g₁ * P j₁ s * ((P j₁ s)⁻¹  * g₂), j₂)
@@ -573,17 +649,7 @@ theorem zero_simple_iff_rees [Finite S] [SemigroupWithZero S] [GroupWithZero G] 
           obtain ⟨z, hz⟩ := regS a
           subst hy
           simp_all only [exists_apply_eq_apply, and_true]
-          use a * z ;
-          simp[SemigroupWithZero.toSemigroup]
-          sorry -- exact hz should work, but typeclass mismatch
-
-
-
-
-
-
-
-
+          use a * z
 
 theorem simple_iff_rees [Semigroup S] [Group G] :
         Ideal'.isSimple S ↔
