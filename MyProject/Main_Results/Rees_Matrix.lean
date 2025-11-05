@@ -7,25 +7,25 @@ def ReesMatrixNonzero {I J G : Type} (P : J → I → G) := I × G × J
 namespace ReesMatrix0
 
 variable {G : Type } {I : Type } {J : Type } (P : J → I → G) [Nonempty I] [Nonempty J]
-  [GroupWithZero G]
+  [GroupWithZero G] [DecidableEq G]
 
 
 instance ReesMul : Mul (ReesMatrix P) where
   mul a b :=
     match a, b with
     | some (i1, g1, j1), some (i2, g2, j2) =>
-      match P j1 i2 with
-      | pval => some (i1, g1 * pval * g2, j2)
+      let prod := g1 * P j1 i2 * g2
+      if prod = 0 then none else some (i1, g1 * P j1 i2 * g2, j2)
     | _, _ => none
 
 /-- I needed to define this separately to use it in the proof of associativity
 -- otherwise lean complained about the Option wrapper on ReesMatrix-/
 def rees_mul (a b : ReesMatrix P) : ReesMatrix P :=
   match a, b with
-  | some (i1, g1, j1), some (i2, g2, j2) =>
-      match P j1 i2 with
-      | pval => some (i1, g1 * pval * g2, j2)
-  | _, _ => none
+    | some (i1, g1, j1), some (i2, g2, j2) =>
+      let prod := g1 * P j1 i2 * g2
+      if prod = 0 then none else some (i1, prod, j2)
+    | _, _ => none
 
 /-
 instance {P : J → I → G} : MulZeroClass (ReesMatrix P) where
@@ -51,15 +51,22 @@ instance {P : J → I → G} : MulZeroClass (ReesMatrix P) where
   cases x <;> rfl
 
 @[simp] lemma rees_mul_some_some
-    {i₁ i₂ : I} {j₁ j₂ : J} {g₁ g₂ : G} :
+    {i₁ i₂ : I} {j₁ j₂ : J} {g₁ g₂ : G} {hnz : g₁ ≠ 0 ∧ g₂ ≠ 0 ∧ P j₁ i₂ ≠ 0}:
     rees_mul P (some (i₁, g₁, j₁)) (some (i₂, g₂, j₂))
-      = some (i₁, g₁ * P j₁ i₂ * g₂, j₂) := rfl
+      = some (i₁, g₁ * P j₁ i₂ * g₂, j₂) := by unfold ReesMatrix0.rees_mul; simp_all
 
 @[simp] lemma rees_mul_eq_mul (a b : ReesMatrix P) :
-    rees_mul P a b = a * b := rfl
+    rees_mul P a b = a * b := by rfl
 
 lemma mul_eq_rees_mul (a b : ReesMatrix P) :
-    a * b = rees_mul P a b := rfl
+    a * b = rees_mul P a b := by rfl
+
+
+@[simp] lemma rees_mul_P_zero
+    {i₁ i₂ : I} {j₁ j₂ : J} {g₁ g₂ : G} (h: P j₂ i₁ = 0):
+    rees_mul P (some (i₂, g₂, j₂)) (some (i₁, g₁, j₁))  = none := by
+      unfold ReesMatrix0.rees_mul
+      simp_all
 
 instance (P : J → I → G) : Semigroup (ReesMatrix P) where
   mul := Mul.mul
@@ -67,53 +74,35 @@ instance (P : J → I → G) : Semigroup (ReesMatrix P) where
     intro a b c
     cases a <;> cases b <;> cases c <;>
       simp [ReesMatrix0.rees_mul, ReesMatrix0.mul_eq_rees_mul, mul_assoc]
-
-
-lemma R_equiv_iff_same_i {a b : ReesMatrix P} :
-    a 𝓡 b ↔
-    match a, b with
-    | some a', some b' => a'.1 = b'.1
-    | _, _ => false := by
-      simp_all only [Bool.false_eq_true]
-      apply Iff.intro
-      · intro a_1
-        split
-        next a b a' b' =>
-          obtain ⟨fst, snd⟩ := a'
-          obtain ⟨fst_1, snd_1⟩ := b'
-          obtain ⟨fst_2, snd⟩ := snd
-          obtain ⟨fst_3, snd_1⟩ := snd_1
-          simp_all only
-          sorry
-        next a_2 b_1 x =>
-          simp_all only [imp_false, Prod.forall]
-          by_cases a = none
-          by_cases b = none
-          · have : a * b = none := by
-              rename_i h h_1
-              subst h_1 h
-              simp_all only [R_eqv_refl, reduceCtorEq, not_false_eq_true, implies_true]
-              rfl
-            sorry
-      · intro a_1
-        split at a_1
-        next a b a' b' =>
-          obtain ⟨fst, snd⟩ := a'
-          obtain ⟨fst_1, snd_1⟩ := b'
-          obtain ⟨fst_2, snd⟩ := snd
-          obtain ⟨fst_3, snd_1⟩ := snd_1
-          subst a_1
-          simp_all only
-          sorry
-        next a_2 b_1 x => simp_all only [implies_true]
-
+    rename_i val val_1 val_2
+    simp_all only [or_false]
+    obtain ⟨fst, snd⟩ := val
+    obtain ⟨fst_1, snd_1⟩ := val_1
+    obtain ⟨fst_2, snd_2⟩ := val_2
+    obtain ⟨fst_3, snd⟩ := snd
+    obtain ⟨fst_4, snd_1⟩ := snd_1
+    obtain ⟨fst_5, snd_2⟩ := snd_2
+    simp_all only
+    split
+    next h =>
+        cases h with
+        | inl h_1 =>
+          subst h_1
+          simp_all only [true_or, ↓reduceIte, ite_self]
+        | inr h_2 =>
+          cases h_2 with
+          | inl h => simp_all only [or_true, ↓reduceIte, ite_self]
+          | inr h_1 =>
+            subst h_1
+            simp_all only [true_or, ↓reduceIte]
+    next h => simp_all only [not_or, false_or, or_self, ↓reduceIte]
 
 
 end ReesMatrix0
 
 namespace ReesMatrixNonzero
 
-variable {I J G : Type} (P : J → I → G) {Nonempty I} {Nonempty J} [Group G]
+variable {I J G : Type} (P : J → I → G) {Nonempty I} {Nonempty J} [Group G][DecidableEq G]
 
 instance : Coe (ReesMatrixNonzero P) (ReesMatrix P) :=
   ⟨fun ⟨i, g, j⟩ => some (i, g, j)⟩
@@ -154,16 +143,53 @@ instance : Semigroup (ReesMatrixNonzero P) where
     have heq : (g₁ * mid₁ * g₂) * mid₂ * g₃ = g₁ * mid₁ * (g₂ * mid₂ * g₃) := by simp[mul_assoc]
     simp_all only [a, b, mid₁, c, mid₂]
 
-/-- Compatibility: mult in `ReesMatrixNoZero` matches `ReesMatrix` coercion.
+
+lemma R_equiv_iff_same_i {a b : ReesMatrixNonzero P} :
+    a 𝓡 b ↔ a.1 = b.1 := by
+  apply Iff.intro
+  · intro hR
+    obtain ⟨ha, hb⟩ := hR
+    rcases a with ⟨i₁, g₁, j₁⟩
+    rcases b with ⟨i₂, g₂, j₂⟩
+    obtain ⟨c, hc⟩ := ha
+    cases c <;>
+    simp at *
+    exact (Prod.mk.inj hc).1
+    rename_i a
+    simp[WithOne.coe] at hc
+    rcases a with ⟨i₃, g₃, j₃⟩
+    injection hc with h
+    simp[ReesMatrix0.rees_mul] at h
+    have : rees_mul_nz P (i₂, g₂, j₂) (i₃, g₃, j₃) = (i₂, g₂ * P j₂ i₃ * g₃, j₃) := by
+      unfold rees_mul_nz; simp_all
+    have : (i₁, g₁, j₁) = (i₂, g₂ * P j₂ i₃ * g₃, j₃) := by simp_all[h]; exact this
+    exact (Prod.mk.inj this).1
+  · intro a_1
+    rcases a with ⟨i₁, g₁, j₁⟩
+    rcases b with ⟨i₂, g₂, j₂⟩
+    simp at a_1
+    rw[<-a_1]
+    simp_all
+    simp[R_eqv, R_preorder]
+    have : (i₁, g₁, j₁) = rees_mul_nz P (i₁, g₂, j₂) (i₁, (g₂ * P j₂ i₁)⁻¹ * g₁, j₁) := by
+        unfold rees_mul_nz; simp_all[<-mul_assoc]
+    let x : ReesMatrix P := some (i₁,  (P j₂ i₁ * g₂)⁻¹ * g₁, j₁)
+    have pf := this.symm
+    conv => lhs;
+    have : (i₁, g₂, j₂) = rees_mul_nz P (i₁, g₂, j₂) (i₁, (P j₂ i₁)⁻¹, j₂) := by
+      unfold rees_mul_nz; simp_all[<-mul_assoc]
+    sorry
+
+/-- Compatibility: mult in `ReesMatrixNonZero` matches `ReesMatrix` coercion.
 To make this work, I need to get the MulOneClass and MulZeroClass multiplication
 of the 0 and nonzero containing RMs to align-- rewrite rees_mul in terms of
 [Mul G], then assert Group/GroupWithZero where needed?-/
 
-theorem coe_mul (a b : ReesMatrixNonzero P) [GroupWithZero G]:
+theorem coe_mul (a b : ReesMatrixNonzero P) [DecidableEq G] [GroupWithZero G]:
     (a * b : ReesMatrix P) = ReesMatrix0.rees_mul P (↑a) (↑b) := by
   rcases a with ⟨i₁,g₁,j₁⟩
   rcases b with ⟨i₂,g₂,j₂⟩
-  simp [ReesMatrix0.rees_mul, ReesMatrixNonzero.rees_mul_nz]; rfl
+  simp [ReesMatrix0.rees_mul, ReesMatrixNonzero.rees_mul_nz]; sorry
 
 end ReesMatrixNonzero
 
@@ -171,7 +197,7 @@ section ReesMatrixPreamble
 variable {G : Type } {I : Type } {J : Type } {S : Type*} (P : J → I → G) [Nonempty I] [Nonempty J]
   [GroupWithZero G][Semigroup S]
 
-/- Prop 3.1 (about simple/zero simple)-- to delete? may fit better
+/- Prop 3.1 (about simple/zero simple)-- to move? may fit better
 be covered in SemigroupIdeals file-/
 
 /- helper lemmas -/
@@ -367,26 +393,7 @@ lemma zero_simple_iff_ideals (S : Type*) [SemigroupWithZero S] :
 
 
 
-lemma zero_simple_iff_ideals2 (S : Type*) [SemigroupWithZero S] :
-  Ideal'.isZeroSimple S ↔ (∃ a : S, a ≠ 0) ∧ ∀ a : S, a ≠ 0 → Ideal'.principal a = ⊤ := by
-    simp_all only [ne_eq]
-    apply Iff.intro
-    · intro a
-      apply And.intro
-      · cases a with
-        | intro h hI =>
-          obtain ⟨x, b⟩ := h
-          have hI := hI (Ideal'.principal x)
-          cases hI with
-          | inl hI =>
-            exact Exists.imp' (HMul.hMul x) (fun a a ↦ a) b
-          | inr hI => exact Exists.imp' (HMul.hMul x) (fun a a ↦ a) b
-      · intro a_1 a_2
-        sorry
-    · intro a
-      obtain ⟨left, right⟩ := a
-      obtain ⟨w, h⟩ := left
-      sorry
+
 
 /- notion of regular classes in semigroups-- there are a number of theorems
 about these we may or may not need/want to prove. For now just need them to
@@ -474,8 +481,7 @@ end ReesMatrixPreamble
 
 section ReesMatrixTheorems
 variable {G : Type } {I : Type } {J : Type } {S : Type} (P : J → I → G) [Nonempty I] [Nonempty J]
-  [GroupWithZero G] [SemigroupWithZero S]
-
+  [DecidableEq G] [GroupWithZero G] [SemigroupWithZero S]
 
 theorem zero_simple_iff_rees [Finite S] :
         Ideal'.isZeroSimple S ↔
@@ -556,11 +562,17 @@ theorem zero_simple_iff_rees [Finite S] :
             have: g₁ ≠ 0 := by
               have : some (i₁, g₁, j₁) ≠ none := by simp
               sorry
+            have: g₂ ≠ 0 := by sorry
             let A : ReesMatrix P := some (i₂, g₁⁻¹ * (P r i₁)⁻¹, r)
             let B : ReesMatrix P := some (s, (P j₁ s)⁻¹ * g₂, j₂)
             let mid : ReesMatrix P := some (i₁, g₁ * P j₁ s * ((P j₁ s)⁻¹  * g₂), j₂)
             let mid' : ReesMatrix P := some (i₂, 1, j₁)
-            have h1 : (iso a) * B = mid := by rw[ha]; simp[B, mid]; rfl
+            have h1 : (iso a) * B = mid := by
+              rw[ha]; simp[B, mid]
+              simp_all
+              have : ReesMatrix0.rees_mul P (some (i₁, g₁, j₁)) (some (s, (P j₁ s)⁻¹ * g₂, j₂)) = some (i₁, g₁ * P j₁ s * ((P j₁ s)⁻¹ * g₂), j₂) := by
+                 unfold ReesMatrix0.rees_mul ; simp_all
+              exact this
             have h1' : A * (iso a) = mid' := by
               rw[ha];
               simp[A, mid']
@@ -706,6 +718,20 @@ instance : Group G2 where
 
 
 abbrev G2WZ := WithZero G2
+
+instance : DecidableEq G2WZ := by
+  intro x y; cases x; cases y
+  simp; exact instDecidableTrue
+  simp; exact instDecidableFalse
+  rename_i a;
+  cases y
+  simp; exact instDecidableFalse
+  rename_i b
+  cases decEq a b with
+  | isTrue h => exact isTrue (by rw[h])
+  | isFalse h => exact isFalse (by intro eq; injection eq with h'; exact h h')
+
+
 
 def one : G2WZ := some 1
 def α : G2WZ := some G2.α
