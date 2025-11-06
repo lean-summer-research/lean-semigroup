@@ -67,6 +67,138 @@ lemma mul_eq_rees_mul (a b : ReesMatrix P) :
     rees_mul P (some (i₂, g₂, j₂)) (some (i₁, g₁, j₁))  = none := by
       unfold ReesMatrix0.rees_mul
       simp_all
+@[simp] lemma mul_mul_eq_zero {a b c : G} :
+  a * b * c = 0 ↔ a = 0 ∨ b = 0 ∨ c = 0 := by
+  -- associate to `(a*b) * c`
+  have h : a * b * c = (a * b) * c := by simp [mul_assoc]
+  constructor
+  · intro hz
+    have hz' : (a * b) * c = 0 := by simpa [h] using hz
+    rcases mul_eq_zero.mp hz' with h_ab | h_c
+    · rcases mul_eq_zero.mp h_ab with h_a | h_b
+      · exact Or.inl h_a
+      · exact Or.inr (Or.inl h_b)
+    · exact Or.inr (Or.inr h_c)
+  · intro hzero
+    rcases hzero with h_a | hzero
+    · simp [h_a]
+    rcases hzero with h_b | h_c
+    · have : a * b = 0 := mul_eq_zero.mpr (Or.inr h_b)
+      simp [this, mul_assoc]
+    · have : (a * b) * c = 0 := mul_eq_zero.mpr (Or.inr h_c)
+      simpa [mul_assoc] using this
+
+/-- Criterion for when `rees_mul` of two non-`none` values is `none`. -/
+@[simp] lemma rees_mul_some_some_eq_none_iff
+    {i₁ i₂ : I} {j₁ j₂ : J} {g₁ g₂ : G} :
+    rees_mul P (some (i₁, g₁, j₁)) (some (i₂, g₂, j₂)) = none
+      ↔ g₁ = 0 ∨ P j₁ i₂ = 0 ∨ g₂ = 0 := by
+  unfold ReesMatrix0.rees_mul
+  set prod := g₁ * P j₁ i₂ * g₂
+  -- the branch is `none` exactly when `prod = 0`
+  have h0 : prod = 0 ↔ g₁ = 0 ∨ P j₁ i₂ = 0 ∨ g₂ = 0 := by
+    simpa [prod] using
+      (ReesMatrix0.mul_mul_eq_zero (a := g₁) (b := P j₁ i₂) (c := g₂))
+  by_cases h : prod = 0
+  · simp_all only [mul_eq_zero, ↓reduceIte, prod] --if prod=0
+  · simp_all [↓reduceIte, prod] -- if prod≠0
+
+@[simp] lemma rees_mul_some_some_ne_none_iff
+    {i₁ i₂ : I} {j₁ j₂ : J} {g₁ g₂ : G} :
+    rees_mul P (some (i₁, g₁, j₁)) (some (i₂, g₂, j₂)) ≠ none
+      ↔ (g₁ ≠ 0 ∧ P j₁ i₂ ≠ 0 ∧ g₂ ≠ 0) := by
+  -- use the previous iff and De Morgan
+  have h := rees_mul_some_some_eq_none_iff (P:=P)
+            (i₁:=i₁) (i₂:=i₂) (j₁:=j₁) (j₂:=j₂) (g₁:=g₁) (g₂:=g₂)
+  constructor
+  · intro hne
+    have not_disj : ¬ (g₁ = 0 ∨ P j₁ i₂ = 0 ∨ g₂ = 0) := by
+      intro disj
+      exact hne ((h.mpr) disj)
+    refine ⟨?_, ?_, ?_⟩
+    · intro hg1; exact not_disj (Or.inl hg1)
+    · intro hP;  exact not_disj (Or.inr (Or.inl hP))
+    · intro hg2; exact not_disj (Or.inr (Or.inr hg2))
+  · intro ⟨hg1, hP, hg2⟩
+    -- with all three nonzero, the guard is false, so result is `some …` hence ≠ none
+    unfold ReesMatrix0.rees_mul
+    set prod := g₁ * P j₁ i₂ * g₂
+    have h12 : g₁ * P j₁ i₂ ≠ 0 := mul_ne_zero hg1 hP
+    have hprod : prod ≠ 0 := mul_ne_zero h12 hg2
+    by_cases hzero : prod = 0
+    · exact (hprod hzero).elim
+    · simp [prod, hzero]
+@[simp] lemma rees_mul_some_left_zero
+    {i₁ i₂ : I} {j₁ j₂ : J} {g₂ : G} :
+    rees_mul P (some (i₁, 0, j₁)) (some (i₂, g₂, j₂)) = none := by
+  simpa using
+    (ReesMatrix0.rees_mul_some_some_eq_none_iff (P:=P)
+      (i₁:=i₁) (i₂:=i₂) (j₁:=j₁) (j₂:=j₂) (g₁:=0) (g₂:=g₂)).mpr (Or.inl rfl)
+
+@[simp] lemma rees_mul_some_right_zero
+    {i₁ i₂ : I} {j₁ j₂ : J} {g₁ : G} :
+    rees_mul P (some (i₁, g₁, j₁)) (some (i₂, 0, j₂)) = none := by
+  simpa using
+    (ReesMatrix0.rees_mul_some_some_eq_none_iff (P:=P)
+      (i₁:=i₁) (i₂:=i₂) (j₁:=j₁) (j₂:=j₂) (g₁:=g₁) (g₂:=0)).mpr (Or.inr <| Or.inr rfl)
+@[simp] lemma rees_mul_some_some_val_of_ne_zero
+    {i₁ i₂ : I} {j₁ j₂ : J} {g₁ g₂ : G}
+    (hg₁ : g₁ ≠ 0) (hP : P j₁ i₂ ≠ 0) (hg₂ : g₂ ≠ 0) :
+    rees_mul P (some (i₁, g₁, j₁)) (some (i₂, g₂, j₂))
+      = some (i₁, g₁ * P j₁ i₂ * g₂, j₂) := by
+  -- just unfold once; `simp` kills the `if` using zero-iff lemma
+  unfold ReesMatrix0.rees_mul
+  have : g₁ * P j₁ i₂ * g₂ ≠ 0 := by
+    have := (ReesMatrix0.mul_mul_eq_zero (a:=g₁) (b:=P j₁ i₂) (c:=g₂))
+    -- rewrite: ¬(prod=0) using (a=0 ∨ b=0 ∨ c=0) ↔ …
+    exact by
+      intro h
+      have : g₁ = 0 ∨ P j₁ i₂ = 0 ∨ g₂ = 0 := by
+        simpa [h] using this.mp h
+      rcases this with h1 | hP' | h2
+      · exact (hg₁ h1)
+      · exact (hP  hP')
+      · exact (hg₂ h2)
+  simp [this]
+@[simp] lemma rees_mul_eq_some_iff
+    {i₁ i₂ i : I} {j₁ j₂ j : J} {g₁ g₂ g : G} :
+    rees_mul P (some (i₁, g₁, j₁)) (some (i₂, g₂, j₂)) = some (i, g, j)
+      ↔ (i = i₁ ∧ j = j₂ ∧ g = g₁ * P j₁ i₂ * g₂ ∧
+          g₁ ≠ (0 : G) ∧ P j₁ i₂ ≠ (0 : G) ∧ g₂ ≠ (0 : G)) := by
+  classical
+  constructor
+  · intro h
+    -- not-none ⇒ all three factors are nonzero
+    have hne :
+      rees_mul P (some (i₁, g₁, j₁)) (some (i₂, g₂, j₂)) ≠ none := by
+      simp_all only [rees_mul_eq_mul, ne_eq, reduceCtorEq, not_false_eq_true]
+    have hnz := (rees_mul_some_some_ne_none_iff (P:=P)
+                  (i₁:=i₁) (j₁:=j₁) (i₂:=i₂) (j₂:=j₂) (g₁:=g₁) (g₂:=g₂)).mp hne
+    rcases hnz with ⟨hg₁, hPnz, hg₂⟩
+    -- if all three factors are nonzero, 'rees_mul' returns the 'some' branch
+    have hsome :
+      rees_mul P (some (i₁, g₁, j₁)) (some (i₂, g₂, j₂))
+        = some (i₁, g₁ * P j₁ i₂ * g₂, j₂) :=
+      rees_mul_some_some_val_of_ne_zero (P:=P) hg₁ hPnz hg₂
+    -- compare the two `some`'s
+    have htrip : (i₁, g₁ * P j₁ i₂ * g₂, j₂) = (i, g, j) :=
+      Option.some.inj (Eq.trans (Eq.symm hsome) h)
+    -- `(i, g, j)` is `Prod I (Prod G J)`:
+    -- first component (I)
+    have hi : i₁ = i := congrArg Prod.fst htrip
+    -- second component is a pair (G × J)
+    have hgj : (g₁ * P j₁ i₂ * g₂, j₂) = (g, j) := congrArg Prod.snd htrip
+    have hg : g₁ * P j₁ i₂ * g₂ = g := congrArg Prod.fst hgj
+    have hj : j₂ = j := congrArg Prod.snd hgj
+
+    exact ⟨hi.symm, hj.symm, hg.symm, hg₁, hPnz, hg₂⟩
+  · rintro ⟨hi, hj, hg, hg₁, hPnz, hg₂⟩
+    have hsome :
+      rees_mul P (some (i₁, g₁, j₁)) (some (i₂, g₂, j₂))
+        = some (i₁, g₁ * P j₁ i₂ * g₂, j₂) :=
+      rees_mul_some_some_val_of_ne_zero (P:=P) hg₁ hPnz hg₂
+    simpa [hi, hj, hg] using hsome
+
 
 instance (P : J → I → G) : Semigroup (ReesMatrix P) where
   mul := Mul.mul
@@ -118,11 +250,12 @@ def rees_mul_nz (a b : ReesMatrixNonzero P) : ReesMatrixNonzero P :=
   | (i₁, g₁, j₁), (i₂, g₂, j₂) =>
       (i₁, g₁ * P j₁ i₂ * g₂, j₂)
 
-/-- If you ever need the explicit `some` form, this is the projections version. -/
 @[simp] lemma coe_mul_as_some (a b : ReesMatrixNonzero P) :
     ((a * b : ReesMatrixNonzero P) : ReesMatrix P)
       = some (a.1, a.2.1 * P a.2.2 b.1 * b.2.1, b.2.2) := by
   cases a <;> cases b <;> rfl
+@[simp] lemma fst_mul (x y : ReesMatrixNonzero P) : (x * y).1 = x.1 := by
+  cases x <;> cases y <;> rfl
 
 instance : Semigroup (ReesMatrixNonzero P) where
   mul_assoc := by
@@ -216,12 +349,26 @@ To make this work, I need to get the MulOneClass and MulZeroClass multiplication
 of the 0 and nonzero containing RMs to align-- rewrite rees_mul in terms of
 [Mul G], then assert Group/GroupWithZero where needed?-/
 
-theorem coe_mul (a b : ReesMatrixNonzero P) [DecidableEq G] [GroupWithZero G]:
+--**i'm not sure if this is correct as stated:** ReesMatrix0.rees_mul returns none IFF g₁, P j₁ i₂, or g₂ = 0--
+@[simp] theorem coe_mul (a b : ReesMatrixNonzero P) [DecidableEq G] [GroupWithZero G]:
     (a * b : ReesMatrix P) = ReesMatrix0.rees_mul P (↑a) (↑b) := by
   rcases a with ⟨i₁,g₁,j₁⟩
   rcases b with ⟨i₂,g₂,j₂⟩
-  simp [ReesMatrix0.rees_mul, ReesMatrixNonzero.rees_mul_nz]; sorry
+  simp [ReesMatrix0.rees_mul, ReesMatrixNonzero.rees_mul_nz];
+  sorry
 
+section withZero
+variable {I J G : Type} (P : J → I → G)
+  [DecidableEq G] [GroupWithZero G]
+@[simp] theorem coe_mul_of_nonzero
+    (a b : ReesMatrixNonzero P)
+    (hg₁ : a.2.1 ≠ (0 : G)) (hP : P a.2.2 b.1 ≠ (0 : G)) (hg₂ : b.2.1 ≠ (0 : G)) :
+    (a * b : ReesMatrix P) = ReesMatrix0.rees_mul P (↑a) (↑b) := by
+  classical
+  rcases a with ⟨i₁, g₁, j₁⟩
+  rcases b with ⟨i₂, g₂, j₂⟩
+  simp_all only [ne_eq]; rfl
+end withZero
 end ReesMatrixNonzero
 
 section ReesMatrixPreamble
