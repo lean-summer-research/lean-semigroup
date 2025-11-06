@@ -156,7 +156,6 @@ lemma R_equiv_iff_same_i {a b : ReesMatrixNonzero P} :
     simp at *
     exact (Prod.mk.inj hc).1
     rename_i a
-    simp[WithOne.coe] at hc
     rcases a with ⟨i₃, g₃, j₃⟩
     injection hc with h
     simp[ReesMatrix0.rees_mul] at h
@@ -167,18 +166,50 @@ lemma R_equiv_iff_same_i {a b : ReesMatrixNonzero P} :
   · intro a_1
     rcases a with ⟨i₁, g₁, j₁⟩
     rcases b with ⟨i₂, g₂, j₂⟩
-    simp at a_1
-    rw[<-a_1]
-    simp_all
-    simp[R_eqv, R_preorder]
-    have : (i₁, g₁, j₁) = rees_mul_nz P (i₁, g₂, j₂) (i₁, (g₂ * P j₂ i₁)⁻¹ * g₁, j₁) := by
-        unfold rees_mul_nz; simp_all[<-mul_assoc]
-    let x : ReesMatrix P := some (i₁,  (P j₂ i₁ * g₂)⁻¹ * g₁, j₁)
-    have pf := this.symm
-    conv => lhs;
-    have : (i₁, g₂, j₂) = rees_mul_nz P (i₁, g₂, j₂) (i₁, (P j₂ i₁)⁻¹, j₂) := by
-      unfold rees_mul_nz; simp_all[<-mul_assoc]
-    sorry
+    let c : ReesMatrixNonzero P := (i₂, (P j₁ i₂)⁻¹ * g₁⁻¹ * g₂, j₂)
+    have hac : rees_mul_nz P (i₁, g₁, j₁)  c = (i₂, g₂, j₂) := by
+      unfold rees_mul_nz; simp_all[c, <-mul_assoc]
+    let d : ReesMatrixNonzero P := (i₁, (g₂  * P j₂ i₁)⁻¹ * g₁, j₁)
+    have had : rees_mul_nz P (i₂, g₂, j₂) d = (i₁, g₁, j₁) := by
+      unfold rees_mul_nz; simp_all[d, <-mul_assoc]
+    unfold R_eqv; unfold R_preorder
+    constructor
+    · use (d : _); rw[had.symm]; rfl
+    · use (c : _); simp[hac.symm]; rfl
+
+  lemma L_equiv_iff_same_j {a b : ReesMatrixNonzero P} :
+    a 𝓛 b ↔ a.2.2 = b.2.2 := by
+  apply Iff.intro
+  · intro hR
+    obtain ⟨ha, hb⟩ := hR
+    rcases a with ⟨i₁, g₁, j₁⟩
+    rcases b with ⟨i₂, g₂, j₂⟩
+    obtain ⟨c, hc⟩ := ha
+    cases c <;>
+    simp at *
+    exact (Prod.mk.inj (Prod.mk.inj hc).2).2
+    rename_i a
+    rcases a with ⟨i₃, g₃, j₃⟩
+    injection hc with h
+    simp[ReesMatrix0.rees_mul] at h
+    have : rees_mul_nz P (i₃, g₃, j₃) (i₂, g₂, j₂) = (i₃, g₃ * P j₃ i₂ * g₂, j₂) := by
+      unfold rees_mul_nz; simp_all
+    have : (i₁, g₁, j₁) = (i₃, g₃ * P j₃ i₂ * g₂, j₂) := by simp_all[h]; exact this
+    exact (Prod.mk.inj (Prod.mk.inj this).2).2
+  · intro a_1
+    rcases a with ⟨i₁, g₁, j₁⟩
+    rcases b with ⟨i₂, g₂, j₂⟩
+    let c : ReesMatrixNonzero P := (i₂, g₂ * (P j₂ i₁ * g₁)⁻¹, j₂)
+    have hac : rees_mul_nz P c (i₁, g₁, j₁)  = (i₂, g₂, j₂) := by
+      unfold rees_mul_nz; simp_all[c, <-mul_assoc]
+    let d : ReesMatrixNonzero P := (i₁, g₁ * (P j₂ i₂ * g₂)⁻¹, j₁)
+    have had : rees_mul_nz P d (i₂, g₂, j₂) = (i₁, g₁, j₁) := by
+      unfold rees_mul_nz; simp_all[d, <-mul_assoc]
+    unfold L_eqv; unfold L_preorder
+    constructor
+    · use (d : _); rw[had.symm]; rfl
+    · use (c : _); simp[hac.symm]; rfl
+
 
 /-- Compatibility: mult in `ReesMatrixNonZero` matches `ReesMatrix` coercion.
 To make this work, I need to get the MulOneClass and MulZeroClass multiplication
@@ -542,26 +573,34 @@ theorem zero_simple_iff_rees [Finite S] :
             · use none; exact h1
             · use none; exact h2
           · refine SetLike.mem_coe.mp ?_
-            have hd0 : iso.symm d ≠ 0 := by
-              contrapose! hx0
-              have h : iso (iso.symm d) = iso 0 := congrArg iso hx0
-              rw [iso.apply_symm_apply] at h
-              have iso_symm_none_zero : iso.symm none = 0 := by
+            have iso_symm_none_zero : iso.symm none = 0 := by
                 by_contra hneq
                 obtain ⟨i_0, g_0, h_0, hh⟩ := nzerorep (iso.symm none) hneq
                 rw [iso.apply_symm_apply] at hh
                 cases hh
+            have hd0 : iso.symm d ≠ 0 := by
+              contrapose! hx0
+              have h : iso (iso.symm d) = iso 0 := congrArg iso hx0
+              rw [iso.apply_symm_apply] at h
               have : iso 0 = none := by
                 have := congrArg iso iso_symm_none_zero
                 simp[iso.apply_symm_apply none] at this
                 exact this.symm
               simp[h, this]
             obtain ⟨i₂, g₂, j₂, hd⟩ := nzerorep (iso.symm d) (hd0)
-            have P1 : P j₁ s ≠ 0 := by sorry
+            have P1 : P j₁ s ≠ 0 := by
+              by_contra h
+              have : ReesMatrix0.rees_mul P (some (i₁, g₁, j₁)) (some (s, g₄, j₄)) = none := by
+                unfold ReesMatrix0.rees_mul; simp_all[h]
+              rw[he2.symm, ha.symm] at this
+              have h0 : a * e2 = 0 := by
+                have h2 := congrArg iso.symm this
+                simp[iso.apply_symm_apply (iso e2)] at h2
+                simp[iso_symm_none_zero] at h2; exact h2
+              have hn0 : a * e2 ≠ 0 := by sorry
+              exact hn0 h0
             have P2 : P r i₁ ≠ 0 := by sorry
-            have: g₁ ≠ 0 := by
-              have : some (i₁, g₁, j₁) ≠ none := by simp
-              sorry
+            have: g₁ ≠ 0 := by sorry
             have: g₂ ≠ 0 := by sorry
             let A : ReesMatrix P := some (i₂, g₁⁻¹ * (P r i₁)⁻¹, r)
             let B : ReesMatrix P := some (s, (P j₁ s)⁻¹ * g₂, j₂)
@@ -659,18 +698,17 @@ theorem zero_simple_iff_rees [Finite S] :
               apply_fun iso.symm at hy; simp at hy
               subst hy
               simp_all only [exists_apply_eq_apply, or_true, true_or]
-        · refine SetLike.mem_coe.mp ?_; unfold Ideal'.principal; simp
+        · refine SetLike.mem_coe.mp ?_; unfold Ideal'.principal
           refine Or.symm (Or.inr ?_); right; left
           rename_i h
           rcases h with ⟨y, hy⟩
-          simp_all
           apply_fun iso.symm at hy
-          simp at hy
+          simp only [map_mul, MulEquiv.symm_apply_apply, hmul_eq] at hy
           use a
-          simp
           obtain ⟨z, hz⟩ := regS a
           subst hy
-          simp_all only [exists_apply_eq_apply, and_true]
+          simp only [exists_apply_eq_apply, and_true]
+          simp_all
           use a * z
 
 theorem simple_iff_rees [Semigroup S] [Group G] :
