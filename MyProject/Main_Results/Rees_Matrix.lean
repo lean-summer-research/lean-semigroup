@@ -661,6 +661,7 @@ section ReesMatrixTheorems
 variable {G : Type } {I : Type } {J : Type } {S : Type} (P : J → I → G) [Nonempty I] [Nonempty J]
   [DecidableEq G] [GroupWithZero G] [SemigroupWithZero S]
 
+
 theorem zero_simple_iff_rees [Finite S] :
         Ideal'.isZeroSimple S ↔
         ∃ (I J : Type)  (P : J → I → G) (iso : S ≃* ReesMatrix P),
@@ -744,11 +745,53 @@ theorem zero_simple_iff_rees [Finite S] :
                 have h2 := congrArg iso.symm this
                 simp[iso.apply_symm_apply (iso e2)] at h2
                 simp[iso_symm_none_zero] at h2; exact h2
-              have hn0 : a * e2 ≠ 0 := by sorry
+              have hn0 : a * e2 ≠ 0 := by
+                have:= ht.left
+                unfold L_class_set at this
+                simp_all
+                obtain ⟨⟨z, hz⟩, x,hx⟩ := this
+                obtain ⟨b, hb⟩ := regS a
+                have httr : e2 * e2 = e2 := by
+                  let htr := ht.right
+                  unfold IsIdempotentElem at htr
+                  exact htr
+                have: (a * e2 : WithOne S) = (a : WithOne S) := by
+                    calc
+                    a * e2 = (x * e2) * e2 := by simp[hx]
+                    _ = x * (e2 * e2) := by simp[<-mul_assoc]
+                    _ = x * ↑(e2) := by rw[<- WithOne.coe_mul, httr]
+                    _ = ↑a := by rw[hx]
+                have := WithOne.coe_inj.mp this; simp_all
               exact hn0 h0
-            have P2 : P r i₁ ≠ 0 := by sorry
-            have: g₁ ≠ 0 := by sorry
-            have: g₂ ≠ 0 := by sorry
+            have P2 : P r i₁ ≠ 0 := by
+              by_contra h
+              have : ReesMatrix0.rees_mul P (some (i₃, g₃, r)) (some (i₁, g₁, j₁)) = none := by
+                unfold ReesMatrix0.rees_mul; simp_all[h]
+              rw[he1.symm, ha.symm] at this
+              have h0 : e1 * a = 0 := by
+                have h1 := congrArg iso.symm this
+                simp[iso.apply_symm_apply (iso e1)] at h1
+                simp[iso_symm_none_zero] at h1; exact h1
+              have hn0 : e1 * a ≠ 0 := by
+                have:= hs.left
+                unfold R_class_set at this
+                simp_all
+                obtain ⟨⟨z, hz⟩, x,hx⟩ := this
+                obtain ⟨b, hb⟩ := regS a
+                have httr : e1 * e1 = e1 := by
+                  let htr := hs.right
+                  unfold IsIdempotentElem at htr
+                  exact htr
+                have: (e1 * a : WithOne S) = (a : WithOne S) := by
+                    calc
+                    e1 * a = e1 * (e1 * x) := by simp[hx]
+                    _ = (e1 * e1) * x := by simp[<-mul_assoc]
+                    _ = ↑(e1) * x := by rw[<- WithOne.coe_mul, httr]
+                    _ = ↑a := by rw[hx]
+                have := WithOne.coe_inj.mp this; simp_all
+              exact hn0 h0
+            have: g₁ ≠ 0 := by sorry -- follow pattern set for P1, P2 above
+            have: g₂ ≠ 0 := by sorry -- follow pattern set for P1, P2 above
             let A : ReesMatrix P := some (i₂, g₁⁻¹ * (P r i₁)⁻¹, r)
             let B : ReesMatrix P := some (s, (P j₁ s)⁻¹ * g₂, j₂)
             let mid : ReesMatrix P := some (i₁, g₁ * P j₁ s * ((P j₁ s)⁻¹  * g₂), j₂)
@@ -846,17 +889,19 @@ theorem zero_simple_iff_rees [Finite S] :
               subst hy
               simp_all only [exists_apply_eq_apply, or_true, true_or]
         · refine SetLike.mem_coe.mp ?_; unfold Ideal'.principal
-          refine Or.symm (Or.inr ?_); right; left
+          refine Or.symm (Or.inl ?_); left
           rename_i h
           rcases h with ⟨y, hy⟩
           apply_fun iso.symm at hy
           simp only [map_mul, MulEquiv.symm_apply_apply, hmul_eq] at hy
           use a
-          obtain ⟨z, hz⟩ := regS a
-          subst hy
-          simp only [exists_apply_eq_apply, and_true]
-          simp_all
-          use a * z
+          constructor
+          . simp
+          use iso.symm y
+          have : iso.symm y ∈ Set.univ := by simp
+          constructor; exact this
+          exact hy
+
 
 theorem simple_iff_rees [Semigroup S] [Group G] :
         Ideal'.isSimple S ↔
