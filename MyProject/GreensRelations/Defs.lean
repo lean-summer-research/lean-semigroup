@@ -305,4 +305,25 @@ def J_class_set (x : S) : Set (S) :=
 def H_class_set (x : S) : Set (S) :=
   { a | a 𝓗 x}
 
+@[simp] lemma in_L_implies_in_J (e a : S): e ∈ L_class_set a → (e ∈ J_class_set a) :=
+  fun h => by
+    simp [L_class_set, J_class_set] at *
+    obtain ⟨u, hu⟩ := h
+    obtain ⟨v, hv⟩ := u
+    obtain ⟨w, hw⟩ := hu
+    refine (J_eqv_iff e a).mpr ?_
+    constructor
+    · use v, 1; simp[hv]
+    · use w, 1; simp [hw]
+
+@[simp] lemma in_R_implies_in_J (e a : S): e ∈ R_class_set a → (e ∈ J_class_set a) :=
+  fun h => by
+    simp [R_class_set, J_class_set] at *
+    obtain ⟨u, hu⟩ := h
+    obtain ⟨v, hv⟩ := u
+    obtain ⟨w, hw⟩ := hu
+    refine (J_eqv_iff e a).mpr ?_
+    constructor
+    · use 1, v; simp[hv]
+    · use 1, w; simp [hw]
 end Translations
