@@ -344,19 +344,6 @@ lemma R_equiv_iff_same_i {a b : ReesMatrixNonzero P} :
     · use (c : _); simp[hac.symm]; rfl
 
 
-/-- Compatibility: mult in `ReesMatrixNonZero` matches `ReesMatrix` coercion.
-To make this work, I need to get the MulOneClass and MulZeroClass multiplication
-of the 0 and nonzero containing RMs to align-- rewrite rees_mul in terms of
-[Mul G], then assert Group/GroupWithZero where needed?-/
-
---**i'm not sure if this is correct as stated:** ReesMatrix0.rees_mul returns none IFF g₁, P j₁ i₂, or g₂ = 0--
-@[simp] theorem coe_mul (a b : ReesMatrixNonzero P) [DecidableEq G] [GroupWithZero G]:
-    (a * b : ReesMatrix P) = ReesMatrix0.rees_mul P (↑a) (↑b) := by
-  rcases a with ⟨i₁,g₁,j₁⟩
-  rcases b with ⟨i₂,g₂,j₂⟩
-  simp [ReesMatrix0.rees_mul, ReesMatrixNonzero.rees_mul_nz];
-  sorry
-
 section withZero
 variable {I J G : Type} (P : J → I → G)
   [DecidableEq G] [GroupWithZero G]
@@ -606,19 +593,9 @@ lemma regular_iff_J_regular (S : Type*) [Semigroup S] :
       unfold J_class_set
       simp
     exact h x x this
-
 lemma zero_regular_iff_J_regular (S : Type*) [SemigroupWithZero S] :
-  regular_semigroup S ↔ all_J_classes_regular S := by
-  apply Iff.intro
-  · intro a
-    exact fun x a_1 a_2 ↦ a a_1
-  · intro h x
-    have hx := h x
-    unfold J_class_regular at hx
-    have : x ∈ J_class_set x := by
-      unfold J_class_set
-      simp
-    exact h x x this
+  regular_semigroup S ↔ all_J_classes_regular S :=
+  regular_iff_J_regular S
 
 lemma regular_semigroup.of_mul_equiv
   {S T : Type*} [Semigroup S] [Semigroup T]
@@ -790,24 +767,104 @@ theorem zero_simple_iff_rees [Finite S] :
                     _ = ↑a := by rw[hx]
                 have := WithOne.coe_inj.mp this; simp_all
               exact hn0 h0
-            have: g₁ ≠ 0 := by sorry -- follow pattern set for P1, P2 above
-            have: g₂ ≠ 0 := by sorry -- follow pattern set for P1, P2 above
+            have hg1_nz: g₁ ≠ 0 := by
+              by_contra h
+              have : ReesMatrix0.rees_mul P (some (i₁, g₁, j₁)) (some (s, g₄, j₄)) = none := by
+                unfold ReesMatrix0.rees_mul; simp_all[h]
+              rw[he2.symm, ha.symm] at this
+              have h0 : a * e2 = 0 := by
+                have h2 := congrArg iso.symm this
+                simp[iso.apply_symm_apply (iso e2)] at h2
+                simp[iso_symm_none_zero] at h2; exact h2
+              have hn0 : a * e2 ≠ 0 := by
+                have:= ht.left
+                unfold L_class_set at this
+                simp_all
+                obtain ⟨⟨z, hz⟩, x,hx⟩ := this
+                obtain ⟨b, hb⟩ := regS a
+                have httr : e2 * e2 = e2 := by
+                  let htr := ht.right
+                  unfold IsIdempotentElem at htr
+                  exact htr
+                have: (a * e2 : WithOne S) = (a : WithOne S) := by
+                    calc
+                    a * e2 = (x * e2) * e2 := by simp[hx]
+                    _ = x * (e2 * e2) := by simp[<-mul_assoc]
+                    _ = x * ↑(e2) := by rw[<- WithOne.coe_mul, httr]
+                    _ = ↑a := by rw[hx]
+                have := WithOne.coe_inj.mp this; simp_all
+              subst h
+              simp_all only [hmul_eq, implies_true, ne_eq, true_and, exists_and_left, forall_const, imp_self,
+                MulEquiv.apply_symm_apply, ReesMatrix0.rees_mul_eq_mul, J1]
+            have hg2_nz: g₂ ≠ 0 := by
+              by_contra h
+              have : ReesMatrix0.rees_mul P (some (i₃, g₃, r)) (some (i₂, g₂, j₂)) = none := by
+                unfold ReesMatrix0.rees_mul; simp_all[h]
+              rw[he1.symm, hd.symm] at this
+              have h0 : e1 * (iso.symm d) = 0 := by
+                have h2 := congrArg iso.symm this
+                simp[iso.apply_symm_apply (iso e1)] at h2
+                simp[iso_symm_none_zero] at h2; exact h2
+              have hn0 : e1 * (iso.symm d) ≠ 0 := by
+                have:= hs.left
+                unfold R_class_set at this
+                simp_all
+                obtain ⟨⟨z, hz⟩, x,hx⟩ := this
+                obtain ⟨b, hb⟩ := regS a
+                have httr : e1 * e1 = e1 := by
+                  let htr := hs.right
+                  unfold IsIdempotentElem at htr
+                  exact htr
+                have: (e1 * a : WithOne S) = (a : WithOne S) := by
+                    calc
+                    e1 * a = e1 * (e1 * x) := by simp[hx]
+                    _ = (e1 * e1) * x := by simp[<-mul_assoc]
+                    _ = ↑(e1) * x := by rw[<- WithOne.coe_mul, httr]
+                    _ = ↑a := by rw[hx]
+                have := WithOne.coe_inj.mp this; sorry --idk what's wrong w this
+              subst h
+              simp_all only [hmul_eq, implies_true, ne_eq, true_and, exists_and_left, forall_const, imp_self,
+                MulEquiv.apply_symm_apply, ReesMatrix0.rees_mul_eq_mul, J1]
+
+
+
             let A : ReesMatrix P := some (i₂, g₁⁻¹ * (P r i₁)⁻¹, r)
             let B : ReesMatrix P := some (s, (P j₁ s)⁻¹ * g₂, j₂)
             let mid : ReesMatrix P := some (i₁, g₁ * P j₁ s * ((P j₁ s)⁻¹  * g₂), j₂)
             let mid' : ReesMatrix P := some (i₂, 1, j₁)
             have h1 : (iso a) * B = mid := by
-              rw[ha]; simp[B, mid]
-              simp_all
-              have : ReesMatrix0.rees_mul P (some (i₁, g₁, j₁)) (some (s, (P j₁ s)⁻¹ * g₂, j₂)) = some (i₁, g₁ * P j₁ s * ((P j₁ s)⁻¹ * g₂), j₂) := by
-                 unfold ReesMatrix0.rees_mul ; simp_all
-              exact this
+              rw [ha, ReesMatrix0.mul_eq_rees_mul]
+              simp [B, mid]
+              apply ReesMatrix0.rees_mul_some_some_val_of_ne_zero
+              -- 1. g₁ ≠ 0
+              · exact hg1_nz
+              -- 2. P j₁ s ≠ 0
+              · exact P1
+              -- 3. (P j₁ s)⁻¹ * g₂ ≠ 0
+              · -- Prove the product of two non-zero terms is non-zero
+                apply mul_ne_zero
+                · -- The inverse of a non-zero element is non-zero
+                  exact inv_ne_zero P1
+                · -- g₂ is non-zero
+                  exact hg2_nz
             have h1' : A * (iso a) = mid' := by
-              rw[ha];
-              simp[A, mid']
-              have : ReesMatrix0.rees_mul P (some (i₂, g₁⁻¹ * (P r i₁)⁻¹, r)) (some (i₁, g₁, j₁)) = some (i₂, 1, j₁) := by
-                unfold ReesMatrix0.rees_mul ; simp_all
-              exact this
+              rw [ha, ReesMatrix0.mul_eq_rees_mul]
+              have hA :
+                ReesMatrix0.rees_mul P A (some (i₁, g₁, j₁)) =
+                  some (i₂, g₁⁻¹ * (P r i₁)⁻¹ * P r i₁ * g₁, j₁) := by
+                have hg1' : g₁⁻¹ * (P r i₁)⁻¹ ≠ (0 : G) :=
+                  mul_ne_zero (inv_ne_zero hg1_nz) (inv_ne_zero P2)
+                have hP' : P r i₁ ≠ (0 : G) := P2
+                have hg2' : g₁ ≠ (0 : G) := hg1_nz
+                apply ReesMatrix0.rees_mul_some_some_val_of_ne_zero
+                · exact hg1'
+                · exact hP'
+                · exact hg2'
+              have hprod : g₁⁻¹ * (P r i₁)⁻¹ * P r i₁ * g₁ = 1 := by
+                simp only [mul_assoc, inv_mul_cancel₀ P2, mul_one, inv_mul_cancel₀ hg1_nz]
+              rw [hA]
+              rw [hprod]
+
             have h2 : A * mid = some (i₂, g₂, j₂) := by
               simp[A, mid]
               set lhs := (g₁⁻¹ * (P r i₁)⁻¹) * P r i₁ * (g₁ * P j₁ s * ((P j₁ s)⁻¹ * g₂))
