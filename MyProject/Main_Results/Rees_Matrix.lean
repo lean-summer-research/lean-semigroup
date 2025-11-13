@@ -357,19 +357,6 @@ lemma R_equiv_iff_same_i {a b : ReesMatrixNonzero P} :
     · use (c : _); simp[hac.symm]; rfl
 
 
-/-- Compatibility: mult in `ReesMatrixNonZero` matches `ReesMatrix` coercion.
-To make this work, I need to get the MulOneClass and MulZeroClass multiplication
-of the 0 and nonzero containing RMs to align-- rewrite rees_mul in terms of
-[Mul G], then assert Group/GroupWithZero where needed?-/
-
---**i'm not sure if this is correct as stated:** ReesMatrix0.rees_mul returns none IFF g₁, P j₁ i₂, or g₂ = 0--
-@[simp] theorem coe_mul (a b : ReesMatrixNonzero P) [DecidableEq G] [GroupWithZero G]:
-    (a * b : ReesMatrix P) = ReesMatrix0.rees_mul P (↑a) (↑b) := by
-  rcases a with ⟨i₁,g₁,j₁⟩
-  rcases b with ⟨i₂,g₂,j₂⟩
-  simp [ReesMatrix0.rees_mul, ReesMatrixNonzero.rees_mul_nz];
-  sorry
-
 section withZero
 variable {I J G : Type} (P : J → I → G)
   [DecidableEq G] [GroupWithZero G]
@@ -619,19 +606,9 @@ lemma regular_iff_J_regular (S : Type*) [Semigroup S] :
       unfold J_class_set
       simp
     exact h x x this
-
 lemma zero_regular_iff_J_regular (S : Type*) [SemigroupWithZero S] :
-  regular_semigroup S ↔ all_J_classes_regular S := by
-  apply Iff.intro
-  · intro a
-    exact fun x a_1 a_2 ↦ a a_1
-  · intro h x
-    have hx := h x
-    unfold J_class_regular at hx
-    have : x ∈ J_class_set x := by
-      unfold J_class_set
-      simp
-    exact h x x this
+  regular_semigroup S ↔ all_J_classes_regular S :=
+  regular_iff_J_regular S
 
 lemma regular_semigroup.of_mul_equiv
   {S T : Type*} [Semigroup S] [Semigroup T]
@@ -672,6 +649,7 @@ lemma zero_regular_semigroup.of_mul_equiv
       have : x = 0 := by
         obtain ⟨s, y, hs⟩ := hb
         sorry
+      sorry
     contradiction
  /- this is Theorem 3.2-/
 
