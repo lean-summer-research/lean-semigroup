@@ -18,11 +18,15 @@ instance ReesMul : Mul (ReesMatrix P) where
       if prod = 0 then none else some (i1, g1 * P j1 i2 * g2, j2)
     | _, _ => none
 
-def rees_of (i : I) (g : G) (j : J) : ReesMatrix P :=
+def rees_of  (i : I) (g : G) (j : J) : ReesMatrix P :=
   if g = 0 then none else some (i, g, j)
 
-lemma rees_of_zero (i : I) (j : J) : rees_of i 0 j = none := by
-  simp [rees_of]
+@[simp] lemma rees_of_eq_none_iff {i : I} {j : J} {g : G} :
+    rees_of P i g j = none ↔ g = 0 := by
+  unfold rees_of
+  by_cases h : g = 0
+  · simp
+  · simp
 
 /-- I needed to define this separately to use it in the proof of associativity
 -- otherwise lean complained about the Option wrapper on ReesMatrix-/
@@ -669,7 +673,7 @@ by ext; rfl
 end ReesMatrixPreamble
 
 section ReesMatrixTheorems
-set_option maxHeartbeats 400000
+set_option maxHeartbeats 600000
 variable {G : Type } {I : Type } {J : Type } {S : Type} (P : J → I → G) [Nonempty I] [Nonempty J]
   [DecidableEq G] [GroupWithZero G] [SemigroupWithZero S]
 
@@ -835,6 +839,26 @@ theorem zero_simple_iff_rees [Finite S] :
                     _ = ↑a := by rw[hx]
                 have := WithOne.coe_inj.mp hwo; subst hd; simp_all only [J1]
               exact hn0 h0
+            let J2 := J_class_set (iso.symm d)
+            have dinJ : iso.symm d ∈ J2 := by
+              simp_all only [ne_eq, J2]
+              unfold J_class_set; simp
+            have hJ : is_J_class J2 := by
+              simp_all only [ne_eq, J2]
+              apply Exists.intro
+              · rfl
+            have hjreg2 : is_regular_J_class J2 hJ := by
+              simp_all only [ne_eq, J2]
+              intro a ha
+              obtain ⟨s, hs⟩ := regS a
+              use s
+            have rr := (regular_J_class_tfae J2) hJ
+            have r1 := rr.out 0 2
+            have r2 := rr.out 0 3
+            have r3 := rr.out 0 5
+            obtain ⟨xr, hxr⟩ := r1
+            obtain ⟨yr, hyr⟩ := r2
+            have xJd := xr hjreg2 (iso.symm d) dinJ ; obtain ⟨e1d, hsd⟩ := xJd
             have: g₁ ≠ 0 := by
               by_contra h
               have : ReesMatrix0.rees_mul P (some (i₃, g₃, r)) (some (i₁, g₁, j₁)) = none := by
@@ -865,7 +889,54 @@ theorem zero_simple_iff_rees [Finite S] :
                     _ = ↑a := by rw[hx]
                 have := WithOne.coe_inj.mp hwo; subst hd; simp_all only [J1]
               exact hn0 h0
-            have: g₂ ≠ 0 := by sorry
+            have he1 : e1d ≠ 0 := by
+              have := hsd.2; apply nonzero_J_class_nonzero J2 _
+              simp_all [J2]
+              obtain ⟨w, h⟩ := hab
+              obtain ⟨w_1, h_1⟩ := hjreg
+              obtain ⟨left, right⟩ := hr
+              obtain ⟨w_2, h⟩ := h
+              obtain ⟨left_1, right_1⟩ := h_1
+              obtain ⟨w_3, h_1⟩ := right_1
+              obtain ⟨left_2, right_1⟩ := h_1
+              apply Aesop.BuiltinRules.not_intro
+              intro a_1
+              simp_all only [Set.mem_singleton_iff, J2]
+              simp_all only [hmul_eq, ne_eq, true_and, implies_true, exists_and_left, true_iff, forall_const, imp_self,
+                and_true, in_R_implies_in_J, J2]
+              exact hJ
+            obtain ⟨i₅, g₅, j₅, hde⟩ := nzerorep e1d he1
+            have: g₂ ≠ 0 := by
+              by_contra h
+              have : ReesMatrix0.rees_mul P (some (i₅, g₅, j₅)) (some (i₂, g₂, j₂))  = none := by
+                unfold ReesMatrix0.rees_mul;
+                subst h
+                simp_all only [hmul_eq, implies_true, ne_eq, true_and, exists_and_left, iff_true, forall_const,
+                  imp_self, true_iff, MulEquiv.apply_symm_apply, mul_zero, ↓reduceIte, J2, J1]
+              have h0 : e1d * iso.symm d = 0 := by
+                have h1 := congrArg iso.symm this
+                rw[hde.symm, hd.symm] at h1; simp[iso.apply_symm_apply] at h1
+                simp[iso_symm_none_zero] at h1; exact h1
+              have hn0 : e1d * iso.symm d ≠ 0 := by
+                have:= hsd.left
+                unfold R_class_set at this
+                simp at *
+                obtain ⟨⟨z, hz⟩, x,hx⟩ := this
+                obtain ⟨b, hb⟩ := regS (iso.symm d)
+                have httr : e1d * e1d = e1d := by
+                  let htr := hsd.right
+                  unfold IsIdempotentElem at htr
+                  exact htr
+                have hwo: (e1d * iso.symm d : WithOne S) = (iso.symm d : WithOne S) := by
+                    calc
+                    e1d * iso.symm d = e1d * (e1d * x) := by simp[hx]
+                    _ = (e1d * e1d) * x := by simp[<-mul_assoc]
+                    _ = ↑(e1d) * x := by rw[<- WithOne.coe_mul, httr]
+                    _ = ↑(iso.symm d) := by rw[hx]
+                have := WithOne.coe_inj.mp hwo;
+                rw[hd]
+                simp only [this, hd.symm]; exact hd0
+              exact hn0 h0
             let A : ReesMatrix P := some (i₂, g₁⁻¹ * (P r i₁)⁻¹, r)
             let B : ReesMatrix P := some (s, (P j₁ s)⁻¹ * g₂, j₂)
             let mid : ReesMatrix P := some (i₁, g₁ * P j₁ s * ((P j₁ s)⁻¹  * g₂), j₂)
